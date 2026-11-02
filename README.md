@@ -1,0 +1,65 @@
+# Impact Management Dashboard
+
+Pilot prototype for Impact One and IOC. It is a read-only management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
+
+It does not post, edit, or delete in Slack, ClickUp, Drive, Calendar, Make, or Instagram.
+
+## Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+- Web: http://127.0.0.1:5173
+- API: http://127.0.0.1:4000
+
+Optional environment file: copy `backend/.env.example` to `backend/.env` only if you have read-only tokens. With no tokens, every external source stays on labelled sample data.
+
+```bash
+npm test
+npm run typecheck
+```
+
+## Demo sign-in
+
+Local accounts only. Not company SSO. The session is an httpOnly cookie, not a token in browser storage. Do not deploy this password.
+
+Password for every account: `Pilot-2026!`
+
+| Name | Email | Role |
+| --- | --- | --- |
+| Mikolaj | mikolaj@impactone.example | Executive |
+| Kulde | kulde@impactone.example | Manager |
+| Zygm | zygm@impactone.example | Manager |
+| Saray | saray@impactone.example | Manager |
+| Pilot consultant | consultant@impactone.example | Consultant, King Salman Park Hills only |
+| Tetia | tetia@impactone.example | Viewer, no budget and no audit |
+
+## Layout
+
+```
+backend/src/modules/<area>/
+  <area>.routes.ts
+  <area>.controller.ts
+  <area>.service.ts
+frontend/src/pages/
+docs/
+```
+
+Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, ai-tools, automations, integrations, system-map, audit, proposal.
+
+## Data labels
+
+- **Live** — read from ClickUp, Calendar, or Drive during this session.
+- **Sample** — fictional or placeholder, safe to show without the real file.
+- **Documented** — stated in the pilot brief.
+- **Needs review** — unknown. Not guessed.
+
+## Documents
+
+- [Handover](docs/HANDOVER.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Access and security](docs/ACCESS-AND-SECURITY.md)
+- [System map](docs/SYSTEM-MAP.md)
+- [Cost estimate](docs/COST-ESTIMATE.md)

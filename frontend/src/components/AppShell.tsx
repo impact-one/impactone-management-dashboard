@@ -216,8 +216,8 @@ export function AppShell() {
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Google Calendar schedules meetings, invitations, availability, and sharing for executive and manager roles.
-              Slack, ClickUp, Drive, Make, and Instagram are not changed from this desk.
+              Google Calendar schedules meetings. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing,
+              for executive and manager roles. Slack, ClickUp, Make, and Instagram are not changed from this desk.
             </TooltipContent>
           </Tooltip>
         </header>

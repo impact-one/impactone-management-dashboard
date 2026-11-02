@@ -9,6 +9,7 @@ import {
   dataSources,
   DEMO_PASSWORD,
   documents,
+  driveFiles,
   followUps,
   meetings,
   milestones,
@@ -24,6 +25,7 @@ class Store {
   projects = projects;
   tasks = tasks;
   documents = documents;
+  driveFiles = structuredClone(driveFiles);
   followUps = followUps;
   milestones = milestones;
   consultants = consultants;

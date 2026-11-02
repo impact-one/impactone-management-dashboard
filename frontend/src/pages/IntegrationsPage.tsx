@@ -37,7 +37,7 @@ export function IntegrationsPage() {
       <PageHeader
         eyebrow="Control"
         title="Integrations"
-        lede="Google Calendar schedules meetings, invitations, availability, and sharing. ClickUp and Drive stay read-only. Slack, Make, Instagram, and the budget sheet have no client."
+        lede="Google Calendar schedules meetings. Google Drive keeps folders, empty Docs and Sheets, and sharing. ClickUp stays read-only. Slack, Make, Instagram, and the budget sheet have no client."
       />
       {loading && !data ? <Loading label="Checking integrations" /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}

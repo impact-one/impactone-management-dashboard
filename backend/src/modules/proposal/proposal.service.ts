@@ -3,7 +3,7 @@ export class ProposalService {
     return {
       assumptions: [
         "The first information architecture is the four areas named in the brief: Impact One operations, King Salman Park Hills, social intake, and the AI overview.",
-        "No live credentials were in the brief, so ClickUp, Drive, and the budget sheet stay on labelled sample data until access exists. Calendar scheduling uses the labelled Asia/Riyadh workspace until a Calendar token is set.",
+        "No live credentials were in the brief, so ClickUp and the budget sheet stay on labelled sample data until access exists. Calendar scheduling uses the labelled Asia/Riyadh workspace until a Calendar token is set. The Drive library uses labelled folders until a Drive token is set.",
         "Budget figures in the app are fictional. They are not a substitute for the IOC finance sheet.",
         "Milestone dates on King Salman Park Hills are placeholders, not Saray's plan.",
         "Where a tool's purpose or connection was not written down, the row is marked Needs review instead of filled in.",
@@ -21,7 +21,7 @@ export class ProposalService {
         {
           title: "Read-only adapters",
           detail:
-            "Google Calendar schedules meetings, updates invitations, checks free/busy, and sets sharing. ClickUp and Drive stay HTTP GET. Slack, Make, Instagram, and Sheets have no client.",
+            "Google Calendar schedules meetings, updates invitations, checks free/busy, and sets sharing. Google Drive creates folders and empty Docs or Sheets, and sets sharing. ClickUp stays HTTP GET. Slack, Make, Instagram, and Sheets have no client. File contents stay in Drive.",
         },
         {
           title: "Sample before access",
@@ -72,7 +72,7 @@ export class ProposalService {
           note: "Model usage is variable and can be larger than hosting. Do not start until the AI overview is reviewed.",
         },
         {
-          name: "ClickUp read and Calendar scheduling",
+          name: "ClickUp read, Calendar scheduling, and the Drive library",
           estimate: "A few days after tokens exist",
           note: "Adapters are already in the API. The wait is access, not a new product.",
         },
@@ -90,14 +90,14 @@ export class ProposalService {
       nextStage: [
         "Persist the audit log and replace demo sign-in with company SSO.",
         "Map live ClickUp tasks onto real projects once a read-only token exists.",
-        "Add Google OAuth for Calendar events, free/busy, and ACL, plus Drive metadata read, reviewed by Kulde.",
+        "Add Google OAuth for Calendar events, free/busy, and ACL, plus Drive files and sharing, reviewed by Kulde. File contents stay in Drive.",
         "Connect the budget only after IOC finance approves a snapshot or a read-only sheet.",
         "Replace the AI catalogue with Zygm's overview, and only then decide on LibreChat.",
         "Fold Mikolaj's demo notes into the layout before any further build.",
       ],
       risks: [
         "Demo passwords are for this local pilot. Do not deploy them.",
-        "A Google token used here can create and update calendar events. Keep it on an Impact account. This desk cannot grant calendar owner.",
+        "A Google token used here can create and update calendar events, and can create empty Drive files and change their sharing. Keep it on an Impact account. This desk cannot grant owner. File contents stay in Drive.",
         "Team-wide ClickUp and Calendar reads can include sensitive titles. They are limited to executive and manager roles for that reason.",
         "The in-memory audit trail is lost on restart.",
         "Sample budget figures can be mistaken for the real sheet if the Sample label is ignored. The budget screen repeats the warning.",

@@ -2,7 +2,7 @@ import type { IntegrationStatus, Origin } from "../../types/domain.js";
 import { calendarClient } from "../calendar/calendar.client.js";
 import type { LiveResult } from "./clients/readOnlyClient.js";
 import { clickUpClient } from "./clients/clickup.client.js";
-import { driveClient } from "./clients/drive.client.js";
+import { driveClient } from "../documents/drive.client.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
   if (!result.configured) {
@@ -78,6 +78,43 @@ function calendarStatus(result: LiveResult<unknown>): IntegrationStatus {
   };
 }
 
+function driveStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "drive",
+      name: "Google Drive",
+      mode: "library",
+      configured: false,
+      origin: "sample",
+      detail: "Folders, empty Docs and Sheets, and sharing run on the labelled library.",
+      limitation: "A Google token with Drive scope sends those changes to Drive. Owner is never granted here. File contents stay in Drive.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "drive",
+      name: "Google Drive",
+      mode: "library",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "drive",
+    name: "Google Drive",
+    mode: "library",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Sharing can be writer, commenter, or reader. File contents stay in Drive.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
 function absent(id: string, name: string, detail: string, limitation: string, origin: Origin = "documented"): IntegrationStatus {
   return {
     id,
@@ -97,7 +134,7 @@ export class IntegrationsService {
     return [
       fromClient("clickup", "ClickUp", clickup),
       calendarStatus(calendar),
-      fromClient("drive", "Google Drive", drive),
+      driveStatus(drive),
       absent(
         "slack",
         "Slack",

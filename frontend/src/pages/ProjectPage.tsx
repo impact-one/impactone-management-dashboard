@@ -159,7 +159,7 @@ export function ProjectPage() {
 
           {detail.teamLiveDocuments.length > 0 ? (
             <Section title="Team-wide live Drive files">
-              <Note>Live Drive names are team-wide and not mapped to a project id. File contents are never downloaded.</Note>
+              <Note>Live Drive names are team-wide and not mapped to a project id. File contents stay in Drive.</Note>
               <DataTable
                 caption="Team-wide Drive files"
                 rows={detail.teamLiveDocuments}

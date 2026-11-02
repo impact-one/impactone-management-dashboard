@@ -55,7 +55,7 @@ export function LoginPage() {
           </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
             Pilot desk for projects, deadlines, IOC consultants, and the tools already named in the brief. Google
-            Calendar schedules meetings. Nothing is posted or deleted in Slack, ClickUp, or Drive.
+            Calendar schedules meetings. Drive keeps the library. Nothing is posted in Slack, ClickUp, Make, or Instagram.
           </p>
           <ul className="mt-8 grid list-none gap-3 p-0 text-sm text-foreground">
             {[

@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
+import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "../app/AuthContext";
-import { DataTable } from "../components/DataTable";
-import { Due } from "../components/Due";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorNote, Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { SourceBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { api } from "../lib/api";
-import { formatDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type {
   AvailabilityReport,
@@ -26,11 +22,12 @@ const fieldClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function CalendarPage() {
-  const { user } = useAuth();
   const { data, error, loading, reload } = useApi<Envelope<CalendarDesk>>("/calendar/desk");
   const desk = data?.data;
   const [formError, setFormError] = useState<string | undefined>();
   const [saved, setSaved] = useState<string | undefined>();
+  const [booking, setBooking] = useState(false);
+  const [availabilityNote, setAvailabilityNote] = useState<string | undefined>();
 
   const meetings = desk?.meetings ?? [];
   const grouped = useMemo(() => groupByDay(meetings), [meetings]);
@@ -52,13 +49,17 @@ export function CalendarPage() {
       <PageHeader
         eyebrow="Work"
         title="Agenda"
-        lede={desk?.operatingModel ?? "Schedule meetings, manage invitations, check availability, and set sharing on the team calendars."}
+        lede={
+          desk && !desk.canSchedule
+            ? "You can read the agenda. Booking and sharing stay with executives and managers."
+            : "See what is coming up, then book a meeting on a calendar you can edit."
+        }
       >
-        {desk ? (
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <Badge>{desk.bestFit}</Badge>
-            <p className="max-w-xs text-xs leading-5 text-muted-foreground sm:text-right">{desk.implementationNote}</p>
-          </div>
+        {desk?.canSchedule ? (
+          <Button type="button" onClick={() => setBooking((open) => !open)}>
+            <PlusIcon data-icon="inline-start" />
+            {booking ? "Close form" : "Book a meeting"}
+          </Button>
         ) : null}
       </PageHeader>
       {loading && !data ? <Loading label="Loading agenda" /> : null}
@@ -68,62 +69,97 @@ export function CalendarPage() {
       {formError ? <ErrorNote message={formError} /> : null}
       {desk ? (
         <>
-          <Section title="How the tools work together">
-            <ol className="grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
-              {desk.steps.map((step, index) => (
-                <li key={step.name} className="rounded-xl border bg-card p-3 shadow-sm">
-                  <span className="grid size-6 place-items-center rounded-md bg-accent text-xs font-semibold text-primary">
-                    {index + 1}
-                  </span>
-                  <p className="mt-2 text-sm font-medium">{step.name}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.detail}</p>
-                </li>
-              ))}
-            </ol>
-          </Section>
-
-          {desk.canSchedule ? (
+          {booking && desk.canSchedule ? (
             <ScheduleForm
               calendars={desk.calendars}
               fallbackZone={desk.timeZone}
-              onSubmit={(body) => run(() => schedule(body))}
+              onCancel={() => setBooking(false)}
+              onSubmit={(body) =>
+                run(async () => {
+                  const message = await schedule(body);
+                  setBooking(false);
+                  return message;
+                })
+              }
             />
-          ) : (
-            <Section title="Schedule">
-              <EmptyState
-                title="Scheduling is limited to executive and manager roles"
-                description={
-                  user
-                    ? `${user.name} can read the agenda. Invitations and sharing stay with the people who run the calendars.`
-                    : "Sign in as an executive or manager to schedule."
-                }
-              />
-            </Section>
-          )}
-
-          {desk.canSchedule ? (
-            <AvailabilityForm fallbackZone={desk.timeZone} onSubmit={(body) => run(() => checkAvailability(body))} />
           ) : null}
 
-          <Section title="Shared calendars">
-            <div className="grid gap-3">
+          <Section title={meetings.length === 1 ? "1 meeting" : `${meetings.length} meetings`}>
+            {meetings.length === 0 ? (
+              <EmptyState
+                title="Nothing on the agenda"
+                description={
+                  desk.canSchedule
+                    ? "Book a meeting and it will show up here."
+                    : "Meetings will show up here when they are on a calendar you can read."
+                }
+              />
+            ) : (
+              <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                {grouped.map(([day, rows]) => (
+                  <div key={day} className="border-b last:border-b-0">
+                    <h3 className="bg-muted/70 px-4 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      {dayHeading(day)}
+                    </h3>
+                    <ul className="list-none p-0">
+                      {rows.map((row) => (
+                        <li key={row.id} className="flex flex-col gap-2 border-b px-4 py-3.5 last:border-b-0 sm:flex-row sm:gap-6">
+                          <div className="border-l-2 border-primary/35 pl-3 sm:w-36 sm:shrink-0">
+                            <p className="text-sm font-medium tabular-nums">{row.timeLabel}</p>
+                            <p className="text-xs text-muted-foreground">{row.timeZone}</p>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {row.href ? (
+                                <a
+                                  href={row.href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                >
+                                  {row.title}
+                                </a>
+                              ) : (
+                                <p className="text-sm font-medium">{row.title}</p>
+                              )}
+                              <SourceBadge origin={row.source.origin} />
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {row.calendarName}
+                              {row.location ? ` · ${row.location}` : ""}
+                            </p>
+                            <p className="mt-1 text-sm text-foreground/80">{guestSummary(row)}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {row.reminders.length > 0 ? row.reminders.map(reminderLabel).join(" · ") : "No reminders"}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          <Section title="Calendars">
+            <ul className="divide-y overflow-hidden rounded-xl border bg-card p-0 shadow-sm">
               {desk.calendars.map((calendar) => (
-                <article key={calendar.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                <li key={calendar.id} className="px-4 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-semibold">{calendar.name}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="text-sm font-medium">{calendar.name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {calendar.timeZone}
                         {calendar.primary ? " · Primary" : ""} · {roleLabel(calendar.accessRole)}
                       </p>
                     </div>
                     <SourceBadge origin={calendar.source.origin} />
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{calendar.source.detail}</p>
                   {calendar.shares.length > 0 ? (
-                    <ul className="mt-3 grid list-none gap-1 p-0 text-sm">
+                    <ul className="mt-3 list-none space-y-1.5 p-0">
                       {calendar.shares.map((share) => (
-                        <li key={share.email} className="flex flex-wrap items-center justify-between gap-2">
+                        <li key={share.email} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                           <span>{share.email}</span>
                           <span className="text-xs text-muted-foreground">{roleLabel(share.role)}</span>
                         </li>
@@ -131,7 +167,7 @@ export function CalendarPage() {
                     </ul>
                   ) : (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      {desk.canSchedule ? "No one else is on this list." : "Sharing list is hidden for this role."}
+                      {desk.canSchedule ? "No one else is on this list." : "The sharing list is hidden for your role."}
                     </p>
                   )}
                   {desk.canSchedule && calendar.accessRole === "owner" ? (
@@ -142,77 +178,50 @@ export function CalendarPage() {
                             method: "POST",
                             body: JSON.stringify({ email, role }),
                           });
-                          return `Sharing for ${email} is now ${roleLabel(role).toLowerCase()}.`;
+                          return `${email} can now ${roleLabel(role).toLowerCase()}.`;
                         })
                       }
                     />
                   ) : null}
-                </article>
+                </li>
               ))}
-            </div>
+            </ul>
           </Section>
 
           {desk.canSchedule ? (
-            <InvitationEditor
-              meetings={meetings.filter((meeting) => meeting.startsAt)}
-              onSubmit={(meetingId, invitations) =>
-                run(async () => {
-                  await api(`/calendar/meetings/${encodeURIComponent(meetingId)}/invitations`, {
-                    method: "POST",
-                    body: JSON.stringify({ invitations }),
-                  });
-                  return "Invitations updated.";
-                })
-              }
-            />
-          ) : null}
-
-          {meetings.length === 0 ? (
-            <Section title="Agenda">
-              <EmptyState title="No meetings in view" description="Scheduled meetings will appear here." />
-            </Section>
-          ) : (
-            grouped.map(([day, rows]) => (
-              <Section key={day} title={day === "undated" ? "Date not set" : formatDate(day)}>
-                <DataTable
-                  caption={`Meetings on ${day === "undated" ? "unset dates" : formatDate(day)}`}
-                  rows={rows}
-                  columns={[
-                    {
-                      key: "title",
-                      header: "Meeting",
-                      render: (row) => (
-                        <span>
-                          <span className="font-medium">{row.title}</span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {row.calendarName}
-                            {row.location ? ` · ${row.location}` : ""}
-                          </span>
-                        </span>
-                      ),
-                    },
-                    { key: "when", header: "When", render: (row) => <Due value={row.date} /> },
-                    { key: "time", header: "Time", render: (row) => row.timeLabel },
-                    { key: "zone", header: "Time zone", render: (row) => row.timeZone },
-                    {
-                      key: "people",
-                      header: "Invitations",
-                      render: (row) =>
-                        row.invitations.length === 0
-                          ? "No guests"
-                          : row.invitations.map((person) => `${person.name || person.email} (${responseLabel(person.response)})`).join(", "),
-                    },
-                    {
-                      key: "reminders",
-                      header: "Reminders",
-                      render: (row) => row.reminders.map(reminderLabel).join(", ") || "None",
-                    },
-                    { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-                  ]}
+            <Section title="People">
+              <p className="mb-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Check who is free before you book, or change the guests on a meeting that is already on the calendar.
+              </p>
+              <div className="grid gap-4">
+                <AvailabilityForm
+                  fallbackZone={desk.timeZone}
+                  result={availabilityNote}
+                  onSubmit={async (body) => {
+                    setFormError(undefined);
+                    setAvailabilityNote(undefined);
+                    try {
+                      setAvailabilityNote(await checkAvailability(body));
+                    } catch (reason) {
+                      setFormError(reason instanceof Error ? reason.message : "Request failed.");
+                    }
+                  }}
                 />
-              </Section>
-            ))
-          )}
+                <InvitationEditor
+                  meetings={meetings.filter((meeting) => meeting.startsAt)}
+                  onSubmit={(meetingId, invitations) =>
+                    run(async () => {
+                      await api(`/calendar/meetings/${encodeURIComponent(meetingId)}/invitations`, {
+                        method: "POST",
+                        body: JSON.stringify({ invitations }),
+                      });
+                      return "Guests updated.";
+                    })
+                  }
+                />
+              </div>
+            </Section>
+          ) : null}
         </>
       ) : null}
     </>
@@ -223,10 +232,12 @@ function ScheduleForm({
   calendars,
   fallbackZone,
   onSubmit,
+  onCancel,
 }: {
   calendars: CalendarDesk["calendars"];
   fallbackZone: string;
   onSubmit: (body: Record<string, unknown>) => void;
+  onCancel: () => void;
 }) {
   const writable = calendars.filter((calendar) => calendar.accessRole === "owner" || calendar.accessRole === "writer");
   const [calendarId, setCalendarId] = useState(writable[0]?.id ?? "");
@@ -257,39 +268,19 @@ function ScheduleForm({
   }
 
   return (
-    <Section title="Schedule a meeting">
-      <form className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-2" onSubmit={submit}>
-        <Field label="Calendar">
-          <select
-            className={fieldClass}
-            value={calendarId}
-            onChange={(event) => {
-              const next = event.target.value;
-              setCalendarId(next);
-              const zone = writable.find((calendar) => calendar.id === next)?.timeZone;
-              if (zone) setTimeZone(zone);
-            }}
-          >
-            {writable.map((calendar) => (
-              <option key={calendar.id} value={calendar.id}>
-                {calendar.name} ({calendar.timeZone})
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Time zone">
-          <Input name="timeZone" value={timeZone} onChange={(event) => setTimeZone(event.target.value)} required />
-        </Field>
-        <Field label="Title">
+    <form className="rounded-xl border bg-card p-4 shadow-sm sm:p-5" onSubmit={submit}>
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold tracking-tight">Book a meeting</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Name it, pick a time, and add the people who should get the invite.</p>
+      </div>
+      <div className="grid gap-4">
+        <Field label="Meeting name">
           <Input name="title" required maxLength={140} placeholder="Weekly planning" />
         </Field>
-        <Field label="Location">
-          <Input name="location" maxLength={200} placeholder="Optional" />
-        </Field>
-        <Field label="Date">
-          <Input name="date" type="date" required />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Date">
+            <Input name="date" type="date" required />
+          </Field>
           <Field label="Start">
             <Input name="startTime" type="time" required />
           </Field>
@@ -297,33 +288,76 @@ function ScheduleForm({
             <Input name="endTime" type="time" required />
           </Field>
         </div>
-        <Field label="Invite by email">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Calendar">
+            <select
+              className={fieldClass}
+              value={calendarId}
+              onChange={(event) => {
+                const next = event.target.value;
+                setCalendarId(next);
+                const zone = writable.find((calendar) => calendar.id === next)?.timeZone;
+                if (zone) setTimeZone(zone);
+              }}
+            >
+              {writable.map((calendar) => (
+                <option key={calendar.id} value={calendar.id}>
+                  {calendar.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Time zone">
+            <Input name="timeZone" value={timeZone} onChange={(event) => setTimeZone(event.target.value)} required />
+          </Field>
+        </div>
+        <Field label="Guests" hint="Separate email addresses with a comma. Leave blank if it is just you.">
           <Input name="invitations" placeholder="saray@impactone.example, kulde@impactone.example" />
         </Field>
-        <fieldset className="grid content-end gap-2 text-sm">
-          <legend className="font-medium">Reminders</legend>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={emailReminder} onChange={(event) => setEmailReminder(event.target.checked)} />
-            Email, 1 day before
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={popupReminder} onChange={(event) => setPopupReminder(event.target.checked)} />
-            Popup, 30 minutes before
-          </label>
+        <Field label="Place" hint="Optional.">
+          <Input name="location" maxLength={200} placeholder="Room, link, or address" />
+        </Field>
+        <fieldset className="grid gap-2">
+          <legend className="text-sm font-medium">Reminders</legend>
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={emailReminder}
+                onChange={(event) => setEmailReminder(event.target.checked)}
+              />
+              Email, 1 day before
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={popupReminder}
+                onChange={(event) => setPopupReminder(event.target.checked)}
+              />
+              Popup, 30 minutes before
+            </label>
+          </div>
         </fieldset>
-        <div className="sm:col-span-2">
-          <Button type="submit">Schedule meeting</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit">Book meeting</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
         </div>
-      </form>
-    </Section>
+      </div>
+    </form>
   );
 }
 
 function AvailabilityForm({
   fallbackZone,
+  result,
   onSubmit,
 }: {
   fallbackZone: string;
+  result?: string;
   onSubmit: (body: Record<string, unknown>) => void;
 }) {
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -339,32 +373,35 @@ function AvailabilityForm({
   }
 
   return (
-    <Section title="Availability">
-      <form className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-2" onSubmit={submit}>
+    <form className="rounded-xl border bg-card p-4 shadow-sm" onSubmit={submit}>
+      <h3 className="text-sm font-medium">Who is free?</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">Enter the people and the time you have in mind.</p>
+      <div className="mt-3 grid gap-3">
         <Field label="People">
           <Input name="emails" required placeholder="saray@impactone.example, kulde@impactone.example" />
         </Field>
-        <Field label="Time zone">
-          <Input name="timeZone" required defaultValue={fallbackZone} />
-        </Field>
-        <Field label="Date">
-          <Input name="date" type="date" required />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Field label="Date">
+            <Input name="date" type="date" required />
+          </Field>
           <Field label="From">
             <Input name="startTime" type="time" required />
           </Field>
           <Field label="To">
             <Input name="endTime" type="time" required />
           </Field>
+          <Field label="Time zone">
+            <Input name="timeZone" required defaultValue={fallbackZone} />
+          </Field>
         </div>
-        <div className="sm:col-span-2">
+        <div>
           <Button type="submit" variant="outline">
-            Check free/busy
+            Check
           </Button>
         </div>
-      </form>
-    </Section>
+        {result ? <p className="text-sm leading-6 text-foreground">{result}</p> : null}
+      </div>
+    </form>
   );
 }
 
@@ -380,13 +417,13 @@ function ShareForm({ onSubmit }: { onSubmit: (email: string, role: CalendarAcces
   return (
     <form className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-[1fr_10rem_auto]" onSubmit={submit}>
       <Input name="email" type="email" required placeholder="person@impactone.example" aria-label="Person to share with" />
-      <select name="role" className={fieldClass} defaultValue="reader" aria-label="Sharing permission">
+      <select name="role" className={fieldClass} defaultValue="reader" aria-label="What they can do">
         <option value="writer">Can edit</option>
         <option value="reader">See details</option>
         <option value="freeBusyReader">Free/busy only</option>
       </select>
       <Button type="submit" variant="outline">
-        Update sharing
+        Share
       </Button>
     </form>
   );
@@ -419,8 +456,10 @@ function InvitationEditor({
   if (meetings.length === 0) return null;
 
   return (
-    <Section title="Invitations">
-      <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm">
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <h3 className="text-sm font-medium">Guests on a meeting</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">Add someone, mark them optional, or record their reply.</p>
+      <div className="mt-3 grid gap-3">
         <Field label="Meeting">
           <select className={fieldClass} value={meetingId} onChange={(event) => choose(event.target.value)}>
             {meetings.map((meeting) => (
@@ -433,8 +472,8 @@ function InvitationEditor({
         {rows.length === 0 ? <p className="text-sm text-muted-foreground">No guests yet.</p> : null}
         <ul className="grid list-none gap-2 p-0">
           {rows.map((person) => (
-            <li key={person.email} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_9rem_auto_auto]">
-              <span className="self-center text-sm">{person.name || person.email}</span>
+            <li key={person.email} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_9rem_auto_auto] sm:items-center">
+              <span className="text-sm">{person.name || person.email}</span>
               <select
                 className={fieldClass}
                 value={person.response}
@@ -449,12 +488,13 @@ function InvitationEditor({
               >
                 <option value="needsAction">No reply</option>
                 <option value="accepted">Accepted</option>
-                <option value="tentative">Tentative</option>
+                <option value="tentative">Maybe</option>
                 <option value="declined">Declined</option>
               </select>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  className="size-4 accent-primary"
                   checked={person.optional}
                   onChange={(event) =>
                     setRows((current) =>
@@ -498,19 +538,20 @@ function InvitationEditor({
         </form>
         <div>
           <Button type="button" onClick={() => onSubmit(meetingId, rows)}>
-            Save invitations
+            Save guests
           </Button>
         </div>
       </div>
-    </Section>
+    </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="grid gap-1.5 text-sm">
       <span className="font-medium">{label}</span>
       {children}
+      {hint ? <span className="text-xs leading-5 text-muted-foreground">{hint}</span> : null}
     </label>
   );
 }
@@ -520,7 +561,7 @@ async function schedule(body: Record<string, unknown>) {
     throw new Error("Choose an email reminder, a popup, or both.");
   }
   await api("/calendar/meetings", { method: "POST", body: JSON.stringify(body) });
-  return "Meeting scheduled. Reminders stay on the event.";
+  return "Meeting booked. It is on the agenda below.";
 }
 
 async function checkAvailability(body: Record<string, unknown>) {
@@ -554,6 +595,19 @@ function groupByDay(meetings: Meeting[]) {
   });
 }
 
+function dayHeading(value: string) {
+  if (value === "undated") return "Not booked yet";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
 function splitEmails(value: string) {
   return value
     .split(/[,\s]+/)
@@ -571,8 +625,18 @@ function roleLabel(role: CalendarAccess) {
 function responseLabel(response: InvitationResponse) {
   if (response === "accepted") return "accepted";
   if (response === "declined") return "declined";
-  if (response === "tentative") return "tentative";
+  if (response === "tentative") return "maybe";
   return "no reply";
+}
+
+function guestSummary(meeting: Meeting) {
+  if (meeting.invitations.length === 0) return "No guests";
+  return meeting.invitations
+    .map((person) => {
+      const name = person.name || person.email;
+      return person.optional ? `${name} (optional, ${responseLabel(person.response)})` : `${name} (${responseLabel(person.response)})`;
+    })
+    .join(", ");
 }
 
 function reminderLabel(reminder: Meeting["reminders"][number]) {

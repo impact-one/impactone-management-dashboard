@@ -1,8 +1,8 @@
 # Impact Management Dashboard
 
-Pilot prototype for Impact One and IOC. It is a read-only management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
+Pilot prototype for Impact One and IOC. It is a management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
 
-Google Calendar is the scheduling system: meetings, invitations, availability, and shared calendars. ClickUp and Drive stay read-only. It does not post, edit, or delete in Slack, Make, or Instagram.
+Google Calendar schedules meetings, invitations, availability, and shared calendars. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing. ClickUp stays read-only. It does not post to Slack, Make, or Instagram. File contents stay in Drive.
 
 ## Run locally
 
@@ -14,7 +14,7 @@ npm run dev
 - Web: http://127.0.0.1:5173
 - API: http://127.0.0.1:4000
 
-Optional environment file: copy `backend/.env.example` to `backend/.env` only if you have read-only tokens. With no tokens, every external source stays on labelled sample data.
+Optional environment file: copy `backend/.env.example` to `backend/.env` only if you have an Impact token. With no tokens, every external source stays on labelled sample data.
 
 ```bash
 npm test
@@ -51,7 +51,7 @@ Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, co
 
 ## Data labels
 
-- **Live** — read from ClickUp, Calendar, or Drive during this session.
+- **Live** — connected to ClickUp, Calendar, or Drive during this session.
 - **Sample** — fictional or placeholder, safe to show without the real file.
 - **Documented** — stated in the pilot brief.
 - **Needs review** — unknown. Not guessed.

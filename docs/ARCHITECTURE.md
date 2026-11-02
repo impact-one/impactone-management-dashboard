@@ -12,7 +12,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | dashboard | `GET /api/dashboard` | Overview counts and lists |
 | projects | `GET /api/projects`, `GET /api/projects/:id` | Workstreams |
 | tasks | `GET /api/tasks` | Sample tasks, plus read-only ClickUp for staff |
-| documents | `GET /api/documents` | Known files, plus Drive metadata for staff |
+| documents | `GET /api/documents`, `GET /api/documents/desk`, `POST /api/documents/files`, sharing | Drive library for staff: folders, empty Docs and Sheets, and sharing. Sample library until a token is set. File contents stay in Drive |
 | follow-ups | `GET /api/follow-ups` | Open questions from the brief |
 | milestones | `GET /api/milestones` | Placeholder IOC milestones |
 | consultants | `GET /api/consultants` | Directory. Fees hidden outside staff roles |
@@ -25,7 +25,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | audit | `GET /api/audit` | Staff only |
 | proposal | `GET /api/proposal` | Access model, LibreChat, cost, assumptions |
 
-CORS allows GET and POST. POST is sign-in and Google Calendar scheduling. ClickUp and Drive clients still send GET only.
+CORS allows GET and POST. POST is sign-in, Google Calendar scheduling, and the Drive library. ClickUp still sends GET only. Drive does not download file bytes.
 
 ## When a token is missing
 
@@ -33,4 +33,4 @@ The service keeps the labelled sample and says so. The screen does not go blank,
 
 ## What this does not include
 
-Company SSO, a database, LibreChat, a Slack or Make client, a Sheets client, and writes to ClickUp, Drive, Slack, or Instagram. Calendar scheduling is the live write.
+Company SSO, a database, LibreChat, a Slack or Make client, a Sheets client, and writes to ClickUp, Slack, or Instagram. Calendar scheduling and the Drive library are the live writes. File contents stay in Drive.

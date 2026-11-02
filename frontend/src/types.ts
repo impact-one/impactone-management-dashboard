@@ -75,6 +75,43 @@ export interface DocumentItem {
   reviewFlags: string[];
 }
 
+export type DriveRole = "owner" | "writer" | "commenter" | "reader";
+export type DriveKind = "folder" | "document" | "spreadsheet" | "file";
+
+export interface DriveShare {
+  email: string;
+  role: DriveRole;
+}
+
+export interface DriveFile {
+  id: string;
+  title: string;
+  kind: DriveKind;
+  folderId: string | null;
+  folderName: string;
+  owner: string;
+  ownerEmail: string;
+  href: string | null;
+  projectId: string | null;
+  projectName: string;
+  accessRole: DriveRole;
+  shares: DriveShare[];
+  source: DataSource;
+  reviewFlags: string[];
+}
+
+export interface DriveDesk {
+  connected: boolean;
+  canManage: boolean;
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  steps: { name: string; detail: string }[];
+  files: DriveFile[];
+  known: DocumentItem[];
+  projects: { id: string; name: string }[];
+}
+
 export interface FollowUp {
   id: string;
   projectId: string;

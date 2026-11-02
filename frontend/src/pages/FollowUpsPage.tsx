@@ -1,11 +1,21 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { CircleAlertIcon, MessageSquareIcon, RadioIcon, ListTodoIcon } from "lucide-react";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { PageHeader, RetryableError } from "../components/PageHeader";
 import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
+import { MetricStrip } from "../components/Surface";
 import { dueState, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { Envelope, FollowUp, Origin } from "../types";
@@ -31,17 +41,52 @@ export function FollowUpsPage() {
     return true;
   });
 
+  const statusMix = useMemo(() => countBy(rows, (item) => plainStatus(item.status)), [rows]);
+  const originMix = useMemo(
+    () =>
+      countBy(rows, (item) => {
+        if (item.source.origin === "live") return "Live";
+        if (item.source.origin === "sample") return "Sample";
+        if (item.source.origin === "documented") return "Documented";
+        return "Needs review";
+      }),
+    [rows],
+  );
+  const projectMix = useMemo(() => countBy(rows, (item) => item.projectName), [rows]);
+  const overdueCount = rows.filter((item) => dueState(item.dueDate) === "overdue").length;
+  const openCount = rows.filter((item) => item.status !== "done" && item.status !== "closed").length;
+
   return (
     <>
       <PageHeader
         eyebrow="Work"
         title="Follow-ups"
-        lede="The open questions from the pilot brief: access, IOC confirmation, finance, and the demo with Mikolaj."
+        lede="Open decisions and outstanding questions that still need an owner."
       />
       {loading && !data ? <TablePageSkeleton label="Loading follow-ups" columns={6} filters={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Total", value: rows.length, icon: <MessageSquareIcon /> },
+              { label: "Open", value: openCount, icon: <ListTodoIcon /> },
+              { label: "Overdue", value: overdueCount, icon: <CircleAlertIcon /> },
+              { label: "Projects", value: projects.length, icon: <RadioIcon /> },
+              { label: "Statuses", value: statuses.length, icon: <ListTodoIcon /> },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel title="Status mix" className="lg:col-span-5">
+              <SoftBarChart data={statusMix} layout="horizontal" compact />
+            </ChartPanel>
+            <ChartPanel title="Source mix" className="lg:col-span-3">
+              <SoftDonutChart data={originMix} centerLabel="Sources" compact />
+            </ChartPanel>
+            <ChartPanel title="By project" className="lg:col-span-4">
+              <SoftProgressTracks data={projectMix} />
+            </ChartPanel>
+          </ChartRow>
           <FilterBar>
             <FilterSearch id="follow-search" label="Search follow-ups" value={query} onChange={setQuery} />
             <FilterSelect
@@ -78,37 +123,27 @@ export function FollowUpsPage() {
             rows={visible}
             empty="No follow-up matches this filter."
             columns={[
-              { key: "title", header: "Follow-up", render: (row) => row.title },
               {
-                key: "project",
-                header: "Project",
+                key: "title",
+                header: "Follow-up",
                 render: (row) => (
-                  <Link to={`/projects/${row.projectId}`} className="underline-offset-4 hover:underline">
-                    {row.projectName}
+                  <Link to="/follow-ups" className="font-medium underline-offset-4 hover:underline">
+                    {row.title}
                   </Link>
                 ),
               },
+              { key: "project", header: "Project", render: (row) => row.projectName },
               { key: "owner", header: "Owner", render: (row) => row.owner },
               {
                 key: "status",
                 header: "Status",
-                render: (row) => (
-                  <span
-                    className={
-                      dueState(row.dueDate) === "overdue"
-                        ? "font-medium capitalize text-[var(--due-overdue-fg)]"
-                        : "capitalize"
-                    }
-                  >
-                    {plainStatus(row.status)}
-                  </span>
-                ),
+                render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
               },
               { key: "due", header: "Due", render: (row) => <Due value={row.dueDate} /> },
               { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
             ]}
           />
-        </>
+        </div>
       ) : null}
     </>
   );

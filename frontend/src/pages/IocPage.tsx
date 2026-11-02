@@ -1,12 +1,21 @@
+import { FlagIcon, UsersIcon, WalletIcon, ListTodoIcon, CalendarRangeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "../app/AuthContext";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { IocSkeleton, SectionTableSkeleton } from "../components/PageSkeleton";
 import { ReviewList, SourceBadge } from "../components/SourceBadge";
-import { Section } from "../components/Surface";
+import { MetricStrip, Section } from "../components/Surface";
 import { formatMoney, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { Budget, Consultant, Envelope, Milestone } from "../types";
@@ -25,11 +34,11 @@ export function IocPage() {
     <>
       <PageHeader
         eyebrow="IOC"
-        title="Consultants, budget, milestones"
-        lede="The IOC slice of the dashboard: King Salman Park Hills consultants, a budget layout, and milestones. Money on this screen is fictional until finance approves a read."
+        title="Consultants and budget"
+        lede="IOC consultants, programme milestones, and budget lines for King Salman Park Hills."
       />
       <nav
-        className="sticky top-14 z-10 -mx-4 mb-2 flex flex-wrap gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur-md md:-mx-6 md:px-6"
+        className="sticky top-14 z-10 -mx-3 mb-5 flex flex-wrap gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur-md md:-mx-5 md:px-5"
         aria-label="IOC sections"
       >
         <Button variant="outline" size="sm" asChild>
@@ -56,7 +65,57 @@ export function IocPage() {
       ) : null}
 
       {consultants.data || milestones.data || budget.data || !loadingShell ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              {
+                label: "Consultants",
+                value: consultants.data?.data.length ?? 0,
+                icon: <UsersIcon />,
+              },
+              {
+                label: "Milestones",
+                value: milestones.data?.data.length ?? 0,
+                icon: <CalendarRangeIcon />,
+              },
+              {
+                label: "Budget lines",
+                value: budget.data?.data.lines.length ?? 0,
+                icon: <WalletIcon />,
+              },
+              {
+                label: "Open consult.",
+                value: (consultants.data?.data ?? []).filter((row) => row.status !== "done").length,
+                icon: <ListTodoIcon />,
+              },
+              {
+                label: "Flagged",
+                value: (consultants.data?.data ?? []).filter((row) => row.reviewFlags.length > 0).length,
+                icon: <FlagIcon />,
+              },
+            ]}
+          />
+          {(consultants.data || milestones.data) && (
+            <ChartRow>
+              <ChartPanel title="Consultant status" className="lg:col-span-5">
+                <SoftBarChart
+                  data={countBy(consultants.data?.data ?? [], (row) => plainStatus(row.status))}
+                  layout="horizontal"
+                  compact
+                />
+              </ChartPanel>
+              <ChartPanel title="Milestone status" className="lg:col-span-3">
+                <SoftDonutChart
+                  data={countBy(milestones.data?.data ?? [], (row) => plainStatus(row.status))}
+                  centerLabel="Marks"
+                  compact
+                />
+              </ChartPanel>
+              <ChartPanel title="Consultant tracks" className="lg:col-span-4">
+                <SoftProgressTracks data={countBy(consultants.data?.data ?? [], (row) => plainStatus(row.status))} />
+              </ChartPanel>
+            </ChartRow>
+          )}
       <Section id="consultants" title="Consultants">
         {consultants.error ? <RetryableError message={consultants.error} onRetry={consultants.reload} /> : null}
         {consultants.data?.meta.note ? <Note>{consultants.data.meta.note}</Note> : null}
@@ -101,10 +160,7 @@ export function IocPage() {
 
       <Section id="budget" title="Budget">
         {!user?.permissions.viewBudget ? (
-          <Note>
-            Budget amounts are limited to executive and manager roles. Ask a manager if you need the sample layout. This
-            account can still see milestones and consultant scopes.
-          </Note>
+          <Note>Budget figures are restricted to executive and manager roles.</Note>
         ) : null}
         {budget.error ? <RetryableError message={budget.error} onRetry={budget.reload} /> : null}
         {user?.permissions.viewBudget && budget.loading && !budget.data ? (
@@ -119,7 +175,7 @@ export function IocPage() {
               ))}
             </ul>
             <DataTable
-              caption="Sample IOC budget lines"
+              caption="Budget lines"
               rows={budget.data.data.lines}
               columns={[
                 { key: "category", header: "Category", render: (row) => row.category },
@@ -132,7 +188,7 @@ export function IocPage() {
               ]}
             />
             <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-medium">Sample total:</span>{" "}
+              <span className="font-medium">Total:</span>{" "}
               {formatMoney(budget.data.data.total, budget.data.data.currency)}{" "}
               <SourceBadge origin={budget.data.data.source.origin} />
             </p>
@@ -141,7 +197,6 @@ export function IocPage() {
       </Section>
 
       <Section id="milestones" title="Milestones">
-        <Note>IOC desk shows milestones for King Salman Park Hills and Impact One operations.</Note>
         {milestones.error ? <RetryableError message={milestones.error} onRetry={milestones.reload} /> : null}
         {milestones.loading && !milestones.data ? <SectionTableSkeleton label="Loading milestones" /> : null}
         {milestones.data ? (
@@ -164,7 +219,7 @@ export function IocPage() {
           />
         ) : null}
       </Section>
-        </>
+        </div>
       ) : null}
     </>
   );

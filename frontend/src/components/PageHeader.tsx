@@ -17,20 +17,26 @@ export function PageHeader({
 }) {
   useTitle(title);
   return (
-    <header className="mb-6 flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-      <div className="max-w-3xl">
-        <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">{eyebrow}</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.65rem]">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{lede}</p>
+    <header className="mb-6 flex flex-col gap-4 border-b border-border/70 pb-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:pb-6">
+      <div className="relative max-w-2xl pl-3.5 sm:pl-5">
+        <span
+          className="absolute top-1 bottom-1 left-0 w-1 rounded-full bg-primary"
+          aria-hidden="true"
+        />
+        <p className="text-xs font-medium text-primary">{eyebrow}</p>
+        <h1 className="mt-1.5 text-[1.65rem] font-semibold tracking-tight text-foreground sm:text-[2rem]">
+          {title}
+        </h1>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{lede}</p>
       </div>
-      {children}
+      {children ? <div className="w-full shrink-0 sm:w-auto sm:pb-0.5">{children}</div> : null}
     </header>
   );
 }
 
 export function ErrorNote({ message }: { message: string }) {
   return (
-    <Alert variant="destructive" className="mb-4">
+    <Alert variant="destructive" className="mb-5 rounded-xl sm:mb-6">
       <CircleAlertIcon />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
@@ -39,7 +45,7 @@ export function ErrorNote({ message }: { message: string }) {
 
 export function RetryableError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <Alert variant="destructive" className="mb-4">
+    <Alert variant="destructive" className="mb-5 rounded-xl sm:mb-6">
       <CircleAlertIcon />
       <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
         <span>{message}</span>
@@ -54,9 +60,9 @@ export function RetryableError({ message, onRetry }: { message: string; onRetry:
 
 export function Note({ children }: { children: ReactNode }) {
   return (
-    <Alert className="mb-4 border-border bg-card py-2 text-foreground shadow-sm">
-      <InfoIcon />
-      <AlertDescription>{children}</AlertDescription>
+    <Alert className="mb-5 rounded-xl border-primary/15 bg-accent/40 py-3 text-foreground shadow-none ring-0 sm:mb-6">
+      <InfoIcon className="text-primary!" />
+      <AlertDescription className="text-sm leading-5 text-foreground/90">{children}</AlertDescription>
     </Alert>
   );
 }

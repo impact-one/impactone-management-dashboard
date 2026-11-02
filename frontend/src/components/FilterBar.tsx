@@ -22,7 +22,7 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        "mb-4 grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1.4fr)_repeat(auto-fit,minmax(9rem,1fr))] lg:items-end",
+        "surface mb-6 grid gap-4 rounded-2xl bg-card/90 p-4 ring-0 sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1.4fr)_repeat(auto-fit,minmax(9rem,1fr))] lg:items-end",
         className,
       )}
     >
@@ -46,12 +46,14 @@ export function FilterSearch({
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
+        {label}
+      </Label>
       <Input
         id={id}
         value={value}
         placeholder={placeholder}
-        className="h-9"
+        className="h-9 bg-background"
         onChange={(event) => onChange(event.target.value)}
       />
     </div>
@@ -73,12 +75,14 @@ export function FilterSelect({
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
+        {label}
+      </Label>
       <select
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="border-input bg-background h-9 w-full rounded-md border px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -113,8 +117,8 @@ export function FilterOrigin({
 export function ResultCount({ shown, total, label = "rows" }: { shown: number; total: number; label?: string }) {
   return (
     <p className="mb-3 text-sm text-muted-foreground">
-      Showing <span className="font-medium text-foreground">{shown}</span> of{" "}
-      <span className="font-medium text-foreground">{total}</span> {label}
+      Showing <span className="font-semibold text-foreground tabular-nums">{shown}</span> of{" "}
+      <span className="font-semibold text-foreground tabular-nums">{total}</span> {label}
     </p>
   );
 }

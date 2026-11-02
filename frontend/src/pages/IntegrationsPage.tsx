@@ -1,13 +1,22 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { CableIcon, CheckCircle2Icon, PlugIcon, RadioIcon, FileWarningIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
-import { Section } from "../components/Surface";
+import { MetricStrip, Section } from "../components/Surface";
 import { formatWhen, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { Envelope, IntegrationStatus, Origin } from "../types";
@@ -32,19 +41,52 @@ export function IntegrationsPage() {
 
   const configured = rows.filter((item) => item.configured);
   const documented = rows.filter((item) => !item.configured);
+  const liveCount = rows.filter((item) => item.origin === "live").length;
+  const reviewCount = rows.filter((item) => item.origin === "needs-review").length;
+  const originMix = useMemo(
+    () =>
+      countBy(rows, (item) => {
+        if (item.origin === "live") return "Live";
+        if (item.origin === "sample") return "Sample";
+        if (item.origin === "documented") return "Documented";
+        return "Needs review";
+      }),
+    [rows],
+  );
+  const modeMix = useMemo(() => countBy(rows, (item) => plainStatus(item.mode)), [rows]);
 
   return (
     <>
       <PageHeader
         eyebrow="Control"
         title="Integrations"
-        lede="Google Calendar schedules meetings. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one channel. ClickUp stays read-only. Make, Instagram, and the budget sheet have no client."
+        lede="Connection status for Calendar, Drive, Slack, ClickUp, and related systems."
       />
       {loading && !data ? <TablePageSkeleton label="Checking integrations" columns={7} filters={3} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
-      {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
+      {data?.meta.note ? <div className="mb-6"><Note>{data.meta.note}</Note></div> : null}
       {data ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Systems", value: rows.length, icon: <PlugIcon /> },
+              { label: "Configured", value: configured.length, icon: <CableIcon /> },
+              { label: "Live", value: liveCount, icon: <RadioIcon /> },
+              { label: "Documented only", value: documented.length, icon: <CheckCircle2Icon /> },
+              { label: "Needs review", value: reviewCount, icon: <FileWarningIcon /> },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel title="Mode mix" className="lg:col-span-5">
+              <SoftBarChart data={modeMix} layout="horizontal" compact />
+            </ChartPanel>
+            <ChartPanel title="Connection state" className="lg:col-span-3">
+              <SoftDonutChart data={originMix} centerLabel="State" compact />
+            </ChartPanel>
+            <ChartPanel title="Health tracks" className="lg:col-span-4">
+              <SoftProgressTracks data={originMix} />
+            </ChartPanel>
+          </ChartRow>
           <FilterBar>
             <FilterSearch id="int-search" label="Search integrations" value={query} onChange={setQuery} />
             <FilterOrigin value={origin} onChange={setOrigin} />
@@ -60,7 +102,7 @@ export function IntegrationsPage() {
               ]}
             />
           </FilterBar>
-          <p className="mb-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">{configured.length} with token path</Badge>
             <Badge variant="outline">{documented.length} documented only</Badge>
             <Button variant="link" className="h-auto px-0" asChild>
@@ -100,7 +142,7 @@ export function IntegrationsPage() {
               ]}
             />
           </Section>
-        </>
+        </div>
       ) : null}
     </>
   );

@@ -1,17 +1,32 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { RefreshCwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HashIcon, MessageSquareIcon, RadioIcon, UsersIcon, SendIcon } from "lucide-react";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { SlackSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
-import { Section } from "../components/Surface";
+import { MetricStrip, Section } from "../components/Surface";
 import { api } from "../lib/api";
 import { formatWhen } from "../lib/format";
 import type { Envelope, SlackDesk, SlackMessage } from "../types";
 
 /** Soft sync only — not a realtime bus. Cache on API is 10s; keep poll aligned. */
 const POLL_MS = 10_000;
+
+function displayAuthor(author: string) {
+  const value = author.trim() || "Unknown";
+  if (/^U[A-Z0-9]{8,}$/i.test(value)) return `Member ${value.slice(-4)}`;
+  return value;
+}
 
 function sortMessages(messages: SlackMessage[]): SlackMessage[] {
   return [...messages].sort((a, b) => b.postedAt.localeCompare(a.postedAt));
@@ -134,6 +149,12 @@ export function SlackPage() {
     }
   }
 
+  const authorMix = useMemo(
+    () =>
+      countBy(desk?.messages ?? [], (item) => displayAuthor(item.author || "Unknown")).slice(0, 8),
+    [desk?.messages],
+  );
+
   return (
     <>
       <PageHeader
@@ -141,8 +162,8 @@ export function SlackPage() {
         title="Slack"
         lede={
           desk && !desk.canPost
-            ? "Channel traffic stays with executives and managers."
-            : "Read the configured channel and post a short daily update as the Impact Dashboard bot."
+            ? "Channel activity is available to executive and manager roles."
+            : "Monitor the operations channel and post concise team updates."
         }
       >
         <Button type="button" variant="outline" onClick={() => void pull("manual")} disabled={refreshing || bootLoading || posting}>
@@ -159,8 +180,56 @@ export function SlackPage() {
       {formError ? <ErrorNote message={formError} /> : null}
 
       {desk ? (
-        <>
-          <p className="mb-3 text-sm text-muted-foreground" aria-live="polite">
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Messages", value: desk.messages.length, icon: <MessageSquareIcon /> },
+              { label: "Authors", value: authorMix.length, icon: <UsersIcon /> },
+              {
+                label: "Connected",
+                value: desk.connected ? "Live" : "Off",
+                icon: <RadioIcon />,
+                tone: desk.connected ? "good" : "muted",
+              },
+              {
+                label: "Can post",
+                value: desk.canPost ? "Yes" : "No",
+                icon: <SendIcon />,
+                tone: desk.canPost ? "good" : "muted",
+              },
+              {
+                label: "Channel",
+                value: `#${desk.channelName}`,
+                icon: <HashIcon />,
+                hint: desk.connected ? "Synced" : "Reference",
+              },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel
+              title="Messages by author"
+              description="Who is posting in this channel"
+              className="lg:col-span-4"
+            >
+              <SoftBarChart data={authorMix} layout="horizontal" compact />
+            </ChartPanel>
+            <ChartPanel title="Source mix" description="Live vs reference rows" className="lg:col-span-4">
+              <SoftDonutChart
+                data={countBy(desk.messages, (item) => {
+                  if (item.source.origin === "live") return "Live";
+                  if (item.source.origin === "sample") return "Sample";
+                  if (item.source.origin === "documented") return "Documented";
+                  return "Needs review";
+                })}
+                centerLabel="Sources"
+                compact
+              />
+            </ChartPanel>
+            <ChartPanel title="Share by author" description="Relative volume" className="lg:col-span-4">
+              <SoftProgressTracks data={authorMix} />
+            </ChartPanel>
+          </ChartRow>
+          <p className="text-sm text-muted-foreground" aria-live="polite">
             Channel: <span className="font-medium text-foreground">#{desk.channelName}</span>
             {desk.connected ? " · Live" : " · Sample until the bot token is connected"}
             {" · "}
@@ -171,11 +240,11 @@ export function SlackPage() {
 
           {desk.canPost ? (
             <Section title="Post update">
-              <form className="grid max-w-2xl gap-3" onSubmit={(event) => void onSubmit(event)}>
+              <form className="surface grid max-w-2xl gap-3 rounded-2xl bg-card p-5 ring-0" onSubmit={(event) => void onSubmit(event)}>
                 <label className="grid gap-1.5 text-sm">
                   <span className="font-medium">Message</span>
                   <textarea
-                    className="min-h-24 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+                    className="min-h-24 rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
                     value={text}
                     onChange={(event) => setText(event.target.value)}
                     placeholder="What finished today, what is blocked, question for tomorrow."
@@ -200,7 +269,7 @@ export function SlackPage() {
               empty="No messages in this channel yet."
               columns={[
                 { key: "text", header: "Message", render: (row) => row.text },
-                { key: "author", header: "From", render: (row) => row.author },
+                { key: "author", header: "From", render: (row) => displayAuthor(row.author) },
                 {
                   key: "when",
                   header: "When",
@@ -215,17 +284,7 @@ export function SlackPage() {
             />
           </Section>
 
-          <Section title="How it fits">
-            <ol className="grid list-decimal gap-2 pl-5 text-sm text-muted-foreground">
-              {desk.steps.map((step) => (
-                <li key={step.name}>
-                  <span className="font-medium text-foreground">{step.name}.</span> {step.detail}
-                </li>
-              ))}
-            </ol>
-            <p className="mt-3 text-sm text-muted-foreground">{desk.operatingModel}</p>
-          </Section>
-        </>
+        </div>
       ) : null}
     </>
   );

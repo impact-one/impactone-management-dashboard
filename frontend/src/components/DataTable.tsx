@@ -21,7 +21,7 @@ export function DataTable<T extends { id: string }>({
   const captionId = useId();
   if (rows.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-dashed bg-muted/25 px-4 py-10 text-center text-sm text-muted-foreground">
         {empty}
       </p>
     );
@@ -29,13 +29,15 @@ export function DataTable<T extends { id: string }>({
 
   return (
     <div
-      className="responsive-table max-h-[70dvh] overflow-auto rounded-xl border bg-card shadow-sm"
-      tabIndex={0}
+      className="surface responsive-table no-scrollbar overflow-x-auto rounded-2xl bg-card ring-0 [&_[data-slot=table-header]]:bg-muted/45"
       role="region"
       aria-labelledby={captionId}
     >
       <Table className="caption-top">
-        <TableCaption id={captionId} className="px-3 pt-3 text-left font-medium text-foreground">
+        <TableCaption
+          id={captionId}
+          className="border-b border-border/60 px-4 py-3.5 text-left text-sm font-semibold text-foreground"
+        >
           {caption}
         </TableCaption>
         <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-sm">
@@ -56,7 +58,7 @@ export function DataTable<T extends { id: string }>({
                     key={column.key}
                     scope="row"
                     data-label={column.header}
-                    className="whitespace-normal align-top font-medium text-foreground"
+                    className="h-auto whitespace-normal px-4 py-3.5 align-top text-sm font-medium leading-5 tracking-normal text-foreground normal-case"
                   >
                     {column.render(row)}
                   </TableHead>

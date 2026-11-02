@@ -10,7 +10,7 @@ export class ConsultantsController {
     const user = requireUser(req);
     sendData(res, items, {
       note: user.permissions.viewConsultantFees
-        ? "Fees on this screen are fictional sample amounts, not contracts."
+        ? "Fee amounts are reference figures, not contracts."
         : "Consultant fees are hidden for this role.",
     });
   });

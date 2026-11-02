@@ -7,8 +7,7 @@ export class SystemMapService {
       flows: store.automations,
       dataSources: store.dataSources,
       agents: [] as [],
-      agentNote:
-        "No named agent was listed in the pilot brief. The agent row stays empty until Zygm's overview names one.",
+      agentNote: "No named agents are listed yet. This section stays empty until ownership is confirmed.",
     };
   }
 }

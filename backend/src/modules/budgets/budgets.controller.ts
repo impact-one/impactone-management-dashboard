@@ -6,7 +6,7 @@ import { budgetsService } from "./budgets.service.js";
 export class BudgetsController {
   get = asyncHandler(async (req: Request, res: Response) => {
     sendData(res, budgetsService.get(requireUser(req)), {
-      note: "Figures are fictional. The live Google Sheet is not connected.",
+      note: "Reference figures only. The live budget sheet is not connected.",
     });
   });
 }

@@ -8,7 +8,7 @@ function Block({ className, ...props }: ComponentProps<"div">) {
 
 function FilterSkeleton({ fields = 4 }: { fields?: number }) {
   return (
-    <div className="mb-4 grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+    <div className="surface mb-4 grid gap-3 rounded-2xl bg-card p-4 ring-0 sm:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: fields }, (_, i) => (
         <div key={i} className="grid gap-1.5">
           <Block className="h-3 w-16" />
@@ -29,13 +29,13 @@ function TableSkeleton({
   label?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-sm" role="status" aria-label={label}>
-      <div className="border-b px-3 py-3">
+    <div className="surface overflow-hidden rounded-2xl bg-card ring-0" role="status" aria-label={label}>
+      <div className="border-b px-4 py-3.5">
         <Block className="h-4 w-40" />
       </div>
       <div className="grid gap-0">
         <div
-          className="grid gap-3 border-b bg-muted/50 px-3 py-2.5"
+          className="hidden gap-3 border-b bg-muted/50 px-4 py-2.5 sm:grid"
           style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
         >
           {Array.from({ length: columns }, (_, i) => (
@@ -45,11 +45,11 @@ function TableSkeleton({
         {Array.from({ length: rows }, (_, row) => (
           <div
             key={row}
-            className="grid gap-3 border-b px-3 py-3.5 last:border-b-0"
+            className="grid gap-3 border-b px-4 py-3.5 last:border-b-0"
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
             {Array.from({ length: columns }, (_, col) => (
-              <Block key={col} className={cn("h-4", col === 0 ? "w-[85%]" : "w-[65%]")} />
+              <Block key={col} className={cn("h-4", col === 0 ? "w-[85%]" : "w-[65%]", col > 1 && "hidden sm:block")} />
             ))}
           </div>
         ))}
@@ -77,45 +77,86 @@ export function TablePageSkeleton({
   );
 }
 
-/** Metric strip + dual panels + card grid — Overview */
+/** Metric strip + charts + feeds — Overview */
 export function OverviewSkeleton({ label = "Loading overview" }: { label?: string }) {
   return (
     <div className="grid gap-4" role="status" aria-label={label}>
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
             <Block className="mb-3 h-3 w-16" />
             <Block className="h-7 w-12" />
           </div>
         ))}
       </div>
       <Block className="h-10 w-full rounded-lg" />
-      <div className="grid gap-4 lg:grid-cols-2">
-        {[0, 1].map((panel) => (
-          <div key={panel} className="overflow-hidden rounded-xl border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <Block className="h-4 w-24" />
-              <Block className="h-7 w-16" />
-            </div>
-            <div className="divide-y">
-              {Array.from({ length: 4 }, (_, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <Block className="h-4 w-[75%]" />
-                    <Block className="h-3 w-[45%]" />
-                  </div>
-                  <Block className="h-5 w-16 shrink-0" />
-                </div>
-              ))}
-            </div>
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-8">
+          <div className="border-b px-4 py-3">
+            <Block className="h-4 w-32" />
           </div>
-        ))}
+          <div className="p-4">
+            <Block className="h-[210px] w-full rounded-lg" />
+          </div>
+        </div>
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-4">
+          <div className="border-b px-4 py-3">
+            <Block className="h-4 w-28" />
+          </div>
+          <div className="grid place-items-center p-6">
+            <Block className="size-36 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-3">
+          <div className="border-b px-4 py-3">
+            <Block className="h-4 w-24" />
+          </div>
+          <div className="grid place-items-center p-6">
+            <Block className="size-28 rounded-full" />
+          </div>
+        </div>
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-4">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <Block className="h-4 w-24" />
+            <Block className="h-7 w-16" />
+          </div>
+          <div className="divide-y">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Block className="h-4 w-[75%]" />
+                  <Block className="h-3 w-[45%]" />
+                </div>
+                <Block className="h-5 w-16 shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-5">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <Block className="h-4 w-24" />
+            <Block className="h-7 w-16" />
+          </div>
+          <div className="divide-y">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Block className="h-4 w-[75%]" />
+                  <Block className="h-3 w-[45%]" />
+                </div>
+                <Block className="h-5 w-16 shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="mt-4">
         <Block className="mb-3 h-4 w-24" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+            <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
               <Block className="mb-3 h-5 w-10" />
               <Block className="mb-2 h-4 w-[70%]" />
               <Block className="h-3 w-full" />
@@ -134,7 +175,7 @@ export function DeskSkeleton({ label, rows = 5 }: { label: string; rows?: number
     <div className="grid gap-6" role="status" aria-label={label}>
       <div>
         <Block className="mb-3 h-4 w-28" />
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
           {Array.from({ length: 2 }, (_, group) => (
             <div key={group} className="border-b last:border-b-0">
               <div className="bg-muted/70 px-4 py-2">
@@ -189,7 +230,7 @@ export function CardsSkeleton({ label, count = 6 }: { label: string; count?: num
       <Block className="h-4 w-28" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
             <div className="mb-3 flex items-center gap-2">
               <Block className="size-8 rounded-lg" />
               <Block className="h-4 w-28" />
@@ -219,7 +260,7 @@ export function DetailSkeleton({ label = "Loading project" }: { label?: string }
         <Block className="mb-3 h-4 w-28" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+            <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
               <Block className="mb-2 h-4 w-[70%]" />
               <Block className="h-3 w-full" />
             </div>
@@ -245,7 +286,7 @@ export function MapSkeleton({ label = "Loading system map" }: { label?: string }
       </div>
       <div className="grid gap-3">
         {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
             <div className="mb-3 flex items-center justify-between gap-3">
               <Block className="h-4 w-40" />
               <Block className="h-5 w-20" />
@@ -283,7 +324,7 @@ export function SectionTableSkeleton({ label = "Loading" }: { label?: string }) 
 export function AuthSkeleton({ label = "Checking session" }: { label?: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-6" role="status" aria-label={label}>
-      <div className="w-full max-w-sm space-y-4 rounded-xl border bg-card p-6 shadow-sm">
+      <div className="w-full max-w-sm surface space-y-4 rounded-2xl bg-card p-6 ring-0">
         <Block className="mx-auto h-8 w-28" />
         <Block className="h-4 w-full" />
         <Block className="h-4 w-[65%]" />
@@ -298,7 +339,7 @@ export function ProseSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="grid max-w-3xl gap-4" role="status" aria-label={label}>
       {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="space-y-2 rounded-xl border bg-card p-4 shadow-sm">
+        <div key={i} className="space-y-2 surface rounded-2xl bg-card p-4 ring-0">
           <Block className="h-4 w-40" />
           <Block className="h-3 w-full" />
           <Block className="h-3 w-full" />

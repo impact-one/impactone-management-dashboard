@@ -1,6 +1,15 @@
 import { Link } from "react-router-dom";
 import { CalendarDaysIcon, FolderKanbanIcon, ListTodoIcon, MessageSquareIcon, SparklesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  ChartPanel,
+  SoftAreaChart,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  SoftRadarChart,
+  countBy,
+} from "../components/charts";
 import { Due } from "../components/Due";
 import { EmptyState } from "../components/EmptyState";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
@@ -10,7 +19,9 @@ import { MarkIcon } from "../components/marks";
 import { CardGrid, MetricStrip, Panel, RecordCard, Section } from "../components/Surface";
 import { plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
-import type { DashboardData, Envelope } from "../types";
+import type { DashboardData, Envelope, FollowUp, Task } from "../types";
+
+const FEED_LIMIT = 5;
 
 export function OverviewPage() {
   const { data, error, loading, reload } = useApi<Envelope<DashboardData>>("/dashboard");
@@ -21,7 +32,7 @@ export function OverviewPage() {
       <PageHeader
         eyebrow="Impact One · IOC"
         title="Overview"
-        lede="Projects, deadlines, follow-ups, and the tools this pilot can already name. Live connections appear only when read-only access is configured."
+        lede="A live snapshot of projects, deadlines, meetings, and connected systems."
       />
       {loading && !dashboard ? <OverviewSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
@@ -30,105 +41,130 @@ export function OverviewPage() {
   );
 }
 
+function statusLabel(value: string) {
+  const plain = plainStatus(value);
+  if (plain === "in progress") return "In progress";
+  return plain.charAt(0).toUpperCase() + plain.slice(1);
+}
+
 function Overview({ dashboard }: { dashboard: DashboardData }) {
+  const statusMix = countBy(dashboard.deadlines, (task) => statusLabel(task.status));
+  const integrationMix = countBy(dashboard.integrations, (item) => {
+    if (item.origin === "live") return "Live";
+    if (item.origin === "sample") return "Sample";
+    if (item.origin === "documented") return "Documented";
+    return "Needs review";
+  });
+  const workload = [
+    { name: "Projects", value: dashboard.counts.projects },
+    { name: "Open tasks", value: dashboard.counts.openTasks },
+    { name: "Due 7 days", value: dashboard.counts.deadlinesThisWeek },
+    { name: "Follow-ups", value: dashboard.counts.openFollowUps },
+    { name: "AI review", value: dashboard.counts.aiNeedsReview },
+  ];
+  const pressureSeries = [
+    { name: "Open", value: dashboard.counts.openTasks },
+    { name: "Week", value: dashboard.counts.deadlinesThisWeek },
+    { name: "Follow", value: dashboard.counts.openFollowUps },
+    { name: "AI", value: dashboard.counts.aiNeedsReview },
+    {
+      name: "Focus",
+      value: Math.max(dashboard.counts.openTasks - dashboard.counts.deadlinesThisWeek, 0),
+    },
+  ];
+
   return (
-    <>
+    <div className="space-y-5 sm:space-y-6">
       <MetricStrip
         items={[
-          { label: "Projects", value: dashboard.counts.projects, icon: <FolderKanbanIcon className="size-3.5" /> },
-          { label: "Open tasks", value: dashboard.counts.openTasks, icon: <ListTodoIcon className="size-3.5" /> },
+          { label: "Projects", value: dashboard.counts.projects, icon: <FolderKanbanIcon /> },
+          { label: "Open tasks", value: dashboard.counts.openTasks, icon: <ListTodoIcon /> },
           {
             label: "Due in 7 days",
             value: dashboard.counts.deadlinesThisWeek,
-            icon: <CalendarDaysIcon className="size-3.5" />,
+            icon: <CalendarDaysIcon />,
           },
-          { label: "Follow-ups", value: dashboard.counts.openFollowUps, icon: <MessageSquareIcon className="size-3.5" /> },
-          { label: "AI to review", value: dashboard.counts.aiNeedsReview, icon: <SparklesIcon className="size-3.5" /> },
+          { label: "Follow-ups", value: dashboard.counts.openFollowUps, icon: <MessageSquareIcon /> },
+          { label: "AI to review", value: dashboard.counts.aiNeedsReview, icon: <SparklesIcon /> },
         ]}
       />
-      <div className="mt-4">
-        <Note>{dashboard.taskNote}</Note>
+
+      <Note>{dashboard.taskNote}</Note>
+
+      {/* Row: area + radar (reference-style dual viz) */}
+      <div className="grid gap-5 lg:grid-cols-12">
+        <ChartPanel title="Workload trend" description="Open work across the desk" className="lg:col-span-8">
+          <SoftAreaChart data={pressureSeries} />
+        </ChartPanel>
+        <ChartPanel title="Balance radar" description="Counts across work types" className="lg:col-span-4">
+          <SoftRadarChart data={workload} />
+        </ChartPanel>
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+
+      {/* Row: donut + horizontal bars + progress tracks */}
+      <div className="grid gap-5 lg:grid-cols-12">
+        <ChartPanel title="Integration mix" description="Connection status by system" className="lg:col-span-4">
+          <SoftDonutChart data={integrationMix} centerLabel="Systems" />
+        </ChartPanel>
+        <ChartPanel title="Deadline status" description="Next 7 days by status" className="lg:col-span-4">
+          {statusMix.length ? (
+            <SoftBarChart data={statusMix} layout="horizontal" compact />
+          ) : (
+            <p className="grid min-h-[200px] place-items-center text-sm text-muted-foreground">No deadlines this week.</p>
+          )}
+        </ChartPanel>
+        <ChartPanel title="Workload share" description="Relative volume" className="lg:col-span-4">
+          <SoftProgressTracks data={workload} />
+        </ChartPanel>
+      </div>
+
+      {/* Feeds */}
+      <div className="grid gap-5 lg:grid-cols-2">
         <Panel
           title="Deadlines"
           action={
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs" asChild>
               <Link to="/tasks">All tasks</Link>
             </Button>
           }
         >
-          {dashboard.deadlines.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No open deadline in the next 7 days.</p>
-          ) : (
-            <ul className="divide-y">
-              {dashboard.deadlines.map((task) => (
-                <li key={task.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">
-                      {task.projectId ? (
-                        <Link to={`/projects/${task.projectId}`} className="hover:underline">
-                          {task.title}
-                        </Link>
-                      ) : (
-                        <Link to="/tasks" className="hover:underline">
-                          {task.title}
-                        </Link>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {task.owner} · {task.projectName} ·{" "}
-                      <span className="capitalize">{plainStatus(task.status)}</span>
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <Due value={task.dueDate} />
-                    <SourceBadge origin={task.source.origin} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <FeedList
+            empty="No open deadline in the next 7 days."
+            items={dashboard.deadlines.slice(0, FEED_LIMIT)}
+            hrefFor={(task) => (task.projectId ? `/projects/${task.projectId}` : "/tasks")}
+            meta={(task) => `${task.owner} · ${task.projectName}`}
+          />
         </Panel>
+
         <Panel
           title="Follow-ups"
           action={
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs" asChild>
               <Link to="/follow-ups">View all</Link>
             </Button>
           }
         >
-          {dashboard.followUps.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No open follow-ups.</p>
-          ) : (
-            <ul className="divide-y">
-              {dashboard.followUps.map((item) => (
-                <li key={item.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">
-                      <Link to="/follow-ups" className="hover:underline">
-                        {item.title}
-                      </Link>
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.owner} · {item.projectName}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <Due value={item.dueDate} />
-                    <SourceBadge origin={item.source.origin} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <FeedList
+            empty="No open follow-ups."
+            items={dashboard.followUps.slice(0, FEED_LIMIT)}
+            hrefFor={() => "/follow-ups"}
+            meta={(item) => `${item.owner} · ${item.projectName}`}
+          />
         </Panel>
       </div>
-      <Section title="Workstreams">
+
+      <Section
+        title="Workstreams"
+        action={
+          <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs" asChild>
+            <Link to="/projects">All projects</Link>
+          </Button>
+        }
+      >
         {dashboard.projects.length === 0 ? (
           <EmptyState title="No projects in view" description="Your role may limit which workstreams appear." />
         ) : (
-          <CardGrid>
+          <CardGrid columns="2">
             {dashboard.projects.map((project) => (
               <li key={project.id}>
                 <RecordCard
@@ -148,13 +184,21 @@ function Overview({ dashboard }: { dashboard: DashboardData }) {
           </CardGrid>
         )}
       </Section>
+
       <Section title="Meetings">
-        <Note>{dashboard.meetingNote}</Note>
+        {dashboard.meetingNote ? (
+          <div className="mb-5">
+            <Note>{dashboard.meetingNote}</Note>
+          </div>
+        ) : null}
         {dashboard.meetings.length === 0 ? (
-          <EmptyState title="No meetings listed" description="Agenda rows will appear when sample or live calendar data is available." />
+          <EmptyState
+            title="No meetings listed"
+            description="Upcoming meetings will appear here once the calendar is connected."
+          />
         ) : (
-          <CardGrid>
-            {dashboard.meetings.map((meeting) => (
+          <CardGrid columns="2">
+            {dashboard.meetings.slice(0, 4).map((meeting) => (
               <li key={meeting.id}>
                 <RecordCard
                   kicker="Meeting"
@@ -180,7 +224,15 @@ function Overview({ dashboard }: { dashboard: DashboardData }) {
           </CardGrid>
         )}
       </Section>
-      <Section title="Where the data sits">
+
+      <Section
+        title="Where the data sits"
+        action={
+          <Button variant="outline" size="sm" className="h-8" asChild>
+            <Link to="/integrations">Integrations</Link>
+          </Button>
+        }
+      >
         <CardGrid columns="2">
           {dashboard.integrations.slice(0, 4).map((item) => (
             <li key={item.id}>
@@ -194,15 +246,47 @@ function Overview({ dashboard }: { dashboard: DashboardData }) {
             </li>
           ))}
         </CardGrid>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/integrations">Integrations</Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/map">System map</Link>
-          </Button>
-        </div>
       </Section>
-    </>
+    </div>
+  );
+}
+
+function FeedList<T extends Task | FollowUp>({
+  items,
+  empty,
+  hrefFor,
+  meta,
+}: {
+  items: T[];
+  empty: string;
+  hrefFor: (item: T) => string;
+  meta: (item: T) => string;
+}) {
+  if (items.length === 0) {
+    return <p className="px-5 py-10 text-center text-sm text-muted-foreground">{empty}</p>;
+  }
+
+  return (
+    <ul className="divide-y divide-border/60">
+      {items.map((item) => (
+        <li
+          key={item.id}
+          className="flex flex-col gap-2.5 px-4 py-3.5 transition-colors hover:bg-accent/30 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium sm:truncate">
+              <Link to={hrefFor(item)} className="hover:text-primary hover:underline">
+                {item.title}
+              </Link>
+            </p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{meta(item)}</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:flex-col sm:items-end">
+            <Due value={item.dueDate} />
+            <SourceBadge origin={item.source.origin} />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

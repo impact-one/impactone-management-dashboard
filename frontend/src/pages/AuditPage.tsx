@@ -1,12 +1,22 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { ActivityIcon, ScrollTextIcon, ShieldIcon, UsersIcon, CheckCircle2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "../app/AuthContext";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { TablePageSkeleton } from "../components/PageSkeleton";
+import { MetricStrip } from "../components/Surface";
 import { formatWhen } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { AuditEvent, Envelope } from "../types";
@@ -27,17 +37,21 @@ export function AuditPage() {
     return true;
   });
 
+  const roleMix = useMemo(() => countBy(rows, (item) => item.role), [rows]);
+  const statusMix = useMemo(() => countBy(rows, (item) => String(item.status)), [rows]);
+  const okCount = rows.filter((item) => item.status >= 200 && item.status < 300).length;
+
   if (!allowed) {
     return (
       <>
         <PageHeader
           eyebrow="Control"
           title="Audit trail"
-          lede="Authenticated reads during this API process. Passwords, tokens, and response bodies are not stored."
+          lede="Signed-in activity across dashboard routes. Credentials and payloads are never stored."
         />
         <EmptyState
           title="Not available for this account"
-          description="Audit events are limited to executive and manager roles."
+          description="Audit access is limited to executive and manager roles."
           action={
             <Button variant="outline" size="sm" asChild>
               <Link to="/">Back to overview</Link>
@@ -53,13 +67,37 @@ export function AuditPage() {
       <PageHeader
         eyebrow="Control"
         title="Audit trail"
-        lede="Who opened which route during this API process. Passwords, tokens, and response bodies are not stored."
+        lede="Signed-in activity across dashboard routes. Credentials and payloads are never stored."
       />
       {loading && !data ? <TablePageSkeleton label="Loading audit trail" columns={5} filters={2} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
-      {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
+      {data?.meta.note ? (
+        <div className="mb-6">
+          <Note>{data.meta.note}</Note>
+        </div>
+      ) : null}
       {data ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Events", value: rows.length, icon: <ScrollTextIcon /> },
+              { label: "Roles", value: roles.length, icon: <UsersIcon /> },
+              { label: "OK responses", value: okCount, icon: <CheckCircle2Icon /> },
+              { label: "Actors", value: new Set(rows.map((item) => item.actorEmail)).size, icon: <ShieldIcon /> },
+              { label: "Visible", value: visible.length, icon: <ActivityIcon /> },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel title="Events by role" className="lg:col-span-5">
+              <SoftBarChart data={roleMix} layout="horizontal" compact />
+            </ChartPanel>
+            <ChartPanel title="HTTP status" className="lg:col-span-3">
+              <SoftDonutChart data={statusMix} centerLabel="Status" compact />
+            </ChartPanel>
+            <ChartPanel title="Role tracks" className="lg:col-span-4">
+              <SoftProgressTracks data={roleMix} />
+            </ChartPanel>
+          </ChartRow>
           <FilterBar>
             <FilterSearch id="audit-search" label="Search audit" value={query} onChange={setQuery} placeholder="Email or action…" />
             <FilterSelect
@@ -86,7 +124,7 @@ export function AuditPage() {
               { key: "status", header: "Status", render: (row) => String(row.status) },
             ]}
           />
-        </>
+        </div>
       ) : null}
     </>
   );

@@ -15,7 +15,7 @@ const accounts = [
   { name: "Kulde", email: "kulde@impactone.example", role: "Manager" },
   { name: "Zygm", email: "zygm@impactone.example", role: "Manager" },
   { name: "Saray", email: "saray@impactone.example", role: "Manager" },
-  { name: "Pilot consultant", email: "consultant@impactone.example", role: "Consultant" },
+  { name: "Consultant", email: "consultant@impactone.example", role: "Consultant" },
   { name: "Tetia", email: "tetia@impactone.example", role: "Viewer" },
 ];
 
@@ -43,41 +43,44 @@ export function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-svh lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="relative border-b border-border bg-muted/50 px-6 py-10 sm:px-10 lg:border-r lg:border-b-0 lg:px-14 lg:py-16">
-        <div className="relative max-w-md">
+    <main className="grid min-h-svh lg:grid-cols-[0.92fr_1.08fr]">
+      <section className="relative overflow-hidden border-b border-border bg-[linear-gradient(160deg,var(--background)_0%,color-mix(in_oklch,var(--accent)_55%,white)_100%)] px-6 py-10 sm:px-10 lg:border-r lg:border-b-0 lg:px-14 lg:py-16">
+        <div
+          className="orb pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute bottom-8 left-8 size-40 rounded-full bg-[var(--brand-cyan)]/12 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative flex h-full max-w-md flex-col justify-center">
           <Logo className="h-10 text-foreground" />
-          <p className="mt-8 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-            Impact One · IOC
-          </p>
+          <p className="mt-10 text-xs font-medium text-primary">Impact One · IOC</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Management desk
           </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Pilot desk for projects, deadlines, IOC consultants, and the tools already named in the brief. Google
-            Calendar schedules meetings. Drive keeps the library. Slack posts channel updates for staff. ClickUp stays
-            read-only. Nothing is posted in Make or Instagram.
+            One place for Impact One and IOC work — projects, deadlines, documents, and team updates from the tools you
+            already use.
           </p>
-          <ul className="mt-8 grid list-none gap-3 p-0 text-sm text-foreground">
+          <ul className="mt-10 grid list-none gap-3 p-0 text-sm text-foreground">
             {[
-              "Role-based views for executive, manager, consultant, and viewer.",
-              "Sample data stays labelled until Calendar, ClickUp, Drive, or Slack access is connected.",
-              "Session cookie is httpOnly. The page never stores the token.",
+              "Role-based access for leadership, managers, consultants, and viewers.",
+              "Live Calendar, Drive, Slack, and ClickUp where credentials are connected.",
+              "Secure signed-in sessions — tokens stay in httpOnly cookies.",
             ].map((point) => (
-              <li key={point} className="border-l-2 border-primary/40 pl-3 leading-6 text-muted-foreground">
+              <li key={point} className="rounded-xl bg-card/70 px-3.5 py-3 leading-6 text-muted-foreground ring-1 ring-border/50">
                 <span className="text-foreground">{point}</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
-      <section className="flex items-center justify-center bg-background px-4 py-10">
-        <Card className="w-full max-w-md border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Sign in</CardTitle>
-            <CardDescription>
-              Local pilot accounts only. Use the demo password from the project README.
-            </CardDescription>
+      <section className="flex items-center justify-center bg-card px-4 py-10">
+        <Card className="surface w-full max-w-md rounded-2xl border-0 py-2 shadow-none ring-0">
+          <CardHeader className="gap-1.5">
+            <CardTitle className="text-2xl tracking-tight">Sign in</CardTitle>
+            <CardDescription>Use your Impact One desk account to continue.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="grid gap-4" action="/api/auth/login" method="post" onSubmit={onSubmit}>
@@ -133,7 +136,7 @@ export function LoginPage() {
               </Button>
             </form>
             <fieldset className="mt-6 grid gap-2 border-0 p-0">
-              <legend className="text-sm font-medium">Pilot accounts</legend>
+              <legend className="text-sm font-medium">Quick select</legend>
               <ul className="grid list-none gap-2 p-0">
                 {accounts.map((account) => {
                   const selected = email === account.email;

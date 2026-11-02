@@ -18,16 +18,16 @@ export function SystemMapPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Day 1"
+        eyebrow="Intelligence"
         title="System map"
-        lede="Tools, automations, and data sources the dashboard can reuse. A step is Documented only when the brief says so. Everything else is Needs review."
+        lede="How tools, automations, and data sources connect across the Impact One desk."
       />
       {loading && !map ? <MapSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {map ? (
         <>
           <nav
-            className="sticky top-14 z-10 -mx-4 mb-4 flex flex-wrap gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur-md md:-mx-6 md:px-6"
+            className="sticky top-14 z-10 -mx-3 mb-5 flex flex-wrap gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur-md md:-mx-5 md:px-5"
             aria-label="System map sections"
           >
             <Button variant="outline" size="sm" asChild>
@@ -57,8 +57,8 @@ export function SystemMapPage() {
               map.flows.map((flow) => {
                 const open = openFlows[flow.id] ?? true;
                 return (
-                  <Card key={flow.id} className="gap-0 py-0 shadow-sm">
-                    <CardHeader className="gap-1 border-b px-4 py-4">
+                  <Card key={flow.id} className="surface gap-0 rounded-2xl border-0 py-0 shadow-none ring-0">
+                    <CardHeader className="gap-1 px-5 pt-5 pb-4">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">

@@ -80,7 +80,7 @@ function SideNav({ groups }: { groups: { id: string; label: string; items: Item[
                       asChild
                       isActive={isItemActive(pathname, item.to, item.end)}
                       tooltip={item.label}
-                      className="[&_svg]:text-primary"
+                      className="data-active:bg-accent data-active:text-sidebar-accent-foreground data-active:shadow-[inset_3px_0_0_0_var(--primary)] [&_svg]:text-primary"
                     >
                       <NavLink to={item.to} end={item.end} onClick={() => setOpenMobile(false)}>
                         <Icon />
@@ -141,7 +141,7 @@ export function AppShell() {
       items: [
         { to: "/integrations", label: "Integrations", icon: PlugIcon },
         ...(user?.permissions.viewAudit ? [{ to: "/audit", label: "Audit trail", icon: ScrollTextIcon }] : []),
-        { to: "/pilot", label: "Pilot notes", icon: NotebookPenIcon },
+        { to: "/pilot", label: "Delivery notes", icon: NotebookPenIcon },
       ],
     },
   ];
@@ -172,7 +172,7 @@ export function AppShell() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="no-scrollbar">
           <SideNav groups={groups} />
         </SidebarContent>
         {user ? (
@@ -202,28 +202,34 @@ export function AppShell() {
         ) : null}
         <SidebarRail />
       </Sidebar>
-      <SidebarInset id="main">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur-md">
+      <SidebarInset
+        id="main"
+        className="min-h-svh min-w-0 overflow-x-clip bg-[var(--background)] md:peer-data-[variant=inset]:m-1 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-1"
+      >
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border/70 bg-card/95 px-3 backdrop-blur-md sm:px-4 md:px-5">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold tracking-tight text-foreground">Impact One desk</p>
+            <p className="hidden truncate text-[11px] text-muted-foreground sm:block">Operations · IOC</p>
+          </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1.5 border-[var(--badge-shell-border)] bg-[var(--brand-soft)] px-2.5 text-xs font-medium text-foreground"
+                className="h-8 gap-1.5 rounded-full border-primary/15 bg-accent px-3 text-xs font-medium text-primary"
               >
-                <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-                Pilot
+                <span className="size-1.5 rounded-full bg-[var(--brand-leaf)]" aria-hidden="true" />
+                Preview
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Google Calendar schedules meetings. Google Drive keeps the library. Slack posts channel updates for executive and
-              manager roles. ClickUp stays read-only. Make and Instagram are not changed from this desk.
+              Preview environment with live Calendar, Drive, Slack, and read-only ClickUp where connected.
             </TooltipContent>
           </Tooltip>
         </header>
-        <div key={pathname} className="page-rise w-full flex-1 px-4 py-6 md:px-6">
+        <div key={pathname} className="page-rise mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-3 py-5 sm:px-4 sm:py-6 md:px-5 md:py-6 lg:px-6">
           <Outlet />
         </div>
       </SidebarInset>

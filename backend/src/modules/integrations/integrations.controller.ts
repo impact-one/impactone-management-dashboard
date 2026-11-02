@@ -6,7 +6,7 @@ import { integrationsService } from "./integrations.service.js";
 export class IntegrationsController {
   list = asyncHandler(async (_req: Request, res: Response) => {
     sendData(res, await integrationsService.list(), {
-      note: "Every external call in this API is an HTTP GET. There is no route that posts, edits, or deletes in a live tool.",
+      note: "Integrations report live connection status. Write actions stay scoped to Calendar, Drive, and Slack where enabled.",
     });
   });
 }

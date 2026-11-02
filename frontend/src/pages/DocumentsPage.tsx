@@ -3,14 +3,22 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "../app/AuthContext";
+import { FileTextIcon, FolderIcon, HardDriveIcon, RadioIcon, LayersIcon } from "lucide-react";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { DeskSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
-import { Section } from "../components/Surface";
+import { MetricStrip, Section } from "../components/Surface";
 import { api } from "../lib/api";
 import { useApi } from "../lib/useApi";
 import type { DriveDesk, DriveFile, DriveKind, DriveRole, Envelope, Origin } from "../types";
@@ -19,7 +27,6 @@ const fieldClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function DocumentsPage() {
-  const { user } = useAuth();
   const { data, error, loading, reload } = useApi<Envelope<DriveDesk>>("/documents/desk");
   const desk = data?.data;
   const [formError, setFormError] = useState<string | undefined>();
@@ -58,14 +65,9 @@ export function DocumentsPage() {
       <PageHeader
         eyebrow="Work"
         title="Documents"
-        lede={desk?.operatingModel ?? "Google Drive holds the file. This desk keeps the name, the link, and who can open it."}
+        lede="Library of shared files and links. Open documents in Drive; this desk tracks access and ownership."
       >
-        {desk ? (
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <Badge>{desk.bestFit}</Badge>
-            <p className="max-w-xs text-xs leading-5 text-muted-foreground sm:text-right">{desk.implementationNote}</p>
-          </div>
-        ) : null}
+        {desk ? <Badge>{desk.bestFit}</Badge> : null}
       </PageHeader>
       {loading && !data ? <DeskSkeleton label="Loading documents" rows={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
@@ -73,21 +75,48 @@ export function DocumentsPage() {
       {saved ? <Note>{saved}</Note> : null}
       {formError ? <ErrorNote message={formError} /> : null}
       {desk ? (
-        <>
-          <Section title="How the tools work together">
-            <ol className="grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
-              {desk.steps.map((step, index) => (
-                <li key={step.name} className="rounded-xl border bg-card p-3 shadow-sm">
-                  <span className="grid size-6 place-items-center rounded-md bg-accent text-xs font-semibold text-primary">
-                    {index + 1}
-                  </span>
-                  <p className="mt-2 text-sm font-medium">{step.name}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.detail}</p>
-                </li>
-              ))}
-            </ol>
-          </Section>
-
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Known docs", value: known.length, icon: <FileTextIcon /> },
+              { label: "Drive files", value: files.length, icon: <HardDriveIcon /> },
+              { label: "Projects", value: projects.length, icon: <FolderIcon /> },
+              { label: "Live", value: [...known, ...files].filter((item) => item.source.origin === "live").length, icon: <RadioIcon /> },
+              { label: "Library items", value: known.length + files.length, icon: <LayersIcon /> },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel title="Library volume" className="lg:col-span-5">
+              <SoftBarChart
+                data={[
+                  { name: "Known", value: known.length },
+                  { name: "Drive files", value: files.length },
+                ]}
+                layout="horizontal"
+                compact
+              />
+            </ChartPanel>
+            <ChartPanel title="Source mix" className="lg:col-span-3">
+              <SoftDonutChart
+                data={countBy([...known, ...files], (item) => {
+                  if (item.source.origin === "live") return "Live";
+                  if (item.source.origin === "sample") return "Sample";
+                  if (item.source.origin === "documented") return "Documented";
+                  return "Needs review";
+                })}
+                centerLabel="Sources"
+                compact
+              />
+            </ChartPanel>
+            <ChartPanel title="Volume tracks" className="lg:col-span-4">
+              <SoftProgressTracks
+                data={[
+                  { name: "Known", value: known.length },
+                  { name: "Drive files", value: files.length },
+                ]}
+              />
+            </ChartPanel>
+          </ChartRow>
           {desk.canManage ? (
             <CreateForm
               files={desk.files}
@@ -103,12 +132,8 @@ export function DocumentsPage() {
           ) : (
             <Section title="Library">
               <EmptyState
-                title="Creating files is limited to executive and manager roles"
-                description={
-                  user
-                    ? `${user.name} can read the documents in view. Sharing stays with the people who run the library.`
-                    : "Sign in as an executive or manager to add a file."
-                }
+                title="Library is read-only for this account"
+                description="Creating files and changing sharing requires executive or manager access."
               />
             </Section>
           )}
@@ -140,7 +165,7 @@ export function DocumentsPage() {
             ) : (
               <div className="grid gap-3">
                 {visibleFiles.map((file) => (
-                  <article key={file.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                  <article key={file.id} className="surface rounded-2xl bg-card p-4 ring-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <h3 className="text-sm font-semibold">
@@ -213,7 +238,7 @@ export function DocumentsPage() {
             )}
           </Section>
 
-          <Section title="Known from the brief">
+          <Section title="Document library">
             <ResultCount shown={visibleKnown.length} total={known.length} label="documents" />
             <DataTable
               caption="Documents and links"
@@ -270,7 +295,7 @@ export function DocumentsPage() {
               ]}
             />
           </Section>
-        </>
+        </div>
       ) : null}
     </>
   );

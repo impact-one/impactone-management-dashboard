@@ -9,7 +9,7 @@ export class AuditService {
     }
     return {
       events: store.audit,
-      note: "The trail is in memory for this pilot. It resets when the API restarts. It records who read which route. It does not store request bodies or tokens.",
+      note: "In-memory activity log for this process. Resets on restart. Credentials and payloads are not stored.",
     };
   }
 }

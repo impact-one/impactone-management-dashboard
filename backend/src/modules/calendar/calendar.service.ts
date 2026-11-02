@@ -29,35 +29,29 @@ const DEFAULT_REMINDERS: MeetingReminder[] = [
 ];
 
 const OPERATING_MODEL = {
-  bestFit: "Meeting scheduling · reminders",
-  implementationNote:
-    "Every meeting and calendar keeps an IANA time zone. Sharing is writer, reader, or free/busy. This desk does not grant owner.",
-  operatingModel:
-    "Google Calendar books the meeting. ClickUp keeps the task, Drive keeps the file, and Otter keeps the transcript. Slack, Make, and Instagram are not written from this screen.",
+  bestFit: "Meeting scheduling",
+  implementationNote: "Meetings keep a time zone. Sharing is writer, reader, or free/busy.",
+  operatingModel: "Google Calendar holds meetings, invitations, and reminders for the team.",
   steps: [
     {
       name: "Shared calendars",
-      detail: "Impact team and IOC project each have one time zone and an access list. Free/busy readers see availability, not titles.",
+      detail: "Team calendars keep a time zone and an access list. Free/busy readers see availability, not titles.",
     },
     {
       name: "Availability",
-      detail: "Before a required guest is invited, the desk checks free/busy in the meeting time zone.",
+      detail: "Before inviting a required guest, the desk checks free/busy in the meeting time zone.",
     },
     {
       name: "Schedule",
-      detail: "Executive and manager roles place the meeting on a calendar they can write. Start and end stay in the chosen time zone.",
+      detail: "Executive and manager roles place the meeting on a calendar they can write.",
     },
     {
       name: "Invitations",
-      detail: "Guests are stored on the event. When Google is connected, Calendar sends the invite and later updates.",
+      detail: "Guests stay on the event. When Google is connected, Calendar sends the invite.",
     },
     {
       name: "Reminders",
-      detail: "The default is an email one day before and a popup 30 minutes before.",
-    },
-    {
-      name: "The rest of the desk",
-      detail: "A meeting does not create a ClickUp task, upload a Drive file, or post to Slack. Those systems stay where they are.",
+      detail: "Default reminders: email one day before, popup 30 minutes before.",
     },
   ],
 };
@@ -68,13 +62,13 @@ export class CalendarService {
     if (!isStaff(user)) {
       return {
         items: local,
-        note: "Live calendars stay with executive and manager roles so private events are not copied into other sessions.",
+        note: "Live calendars are limited to executive and manager roles.",
       };
     }
     if (!env.googleAccessToken) {
       return {
         items: local,
-        note: "Google Calendar is not connected. Scheduling, invitations, and sharing run on the labelled team workspace in Asia/Riyadh.",
+        note: "Google Calendar is not connected. Showing the shared reference agenda.",
       };
     }
     const live = await calendarClient.get();
@@ -82,12 +76,12 @@ export class CalendarService {
       const kept = local.filter((meeting) => meeting.source.system !== "Google Calendar");
       return {
         items: [...live.data, ...kept],
-        note: "Live Google Calendar events for executive and manager roles. Invitations stay on the event.",
+        note: "Live Google Calendar for executive and manager roles.",
       };
     }
     return {
       items: local,
-      note: live.configured ? `${live.message} The labelled workspace is shown instead.` : live.message,
+      note: live.configured ? `${live.message} Showing the reference agenda instead.` : live.message,
     };
   }
 

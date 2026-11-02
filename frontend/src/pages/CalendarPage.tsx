@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { PlusIcon } from "lucide-react";
+import { CalendarDaysIcon, PlusIcon, RadioIcon, Share2Icon, ClockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { DeskSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
-import { Section } from "../components/Surface";
+import { ChartPanel, ChartRow, SoftDonutChart, SoftProgressTracks, countBy } from "../components/charts";
+import { MetricStrip, Section } from "../components/Surface";
 import { api } from "../lib/api";
 import { useApi } from "../lib/useApi";
 import type {
@@ -52,8 +53,8 @@ export function CalendarPage() {
         title="Agenda"
         lede={
           desk && !desk.canSchedule
-            ? "You can read the agenda. Booking and sharing stay with executives and managers."
-            : "See what is coming up, then book a meeting on a calendar you can edit."
+            ? "View upcoming meetings. Booking and calendar sharing require manager access."
+            : "Review the shared agenda and schedule meetings on calendars you can edit."
         }
       >
         {desk?.canSchedule ? (
@@ -69,7 +70,40 @@ export function CalendarPage() {
       {saved ? <Note>{saved}</Note> : null}
       {formError ? <ErrorNote message={formError} /> : null}
       {desk ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Meetings", value: meetings.length, icon: <CalendarDaysIcon /> },
+              { label: "Calendars", value: desk.calendars.length, icon: <Share2Icon /> },
+              { label: "Live", value: meetings.filter((row) => row.source.origin === "live").length, icon: <RadioIcon /> },
+              { label: "Days shown", value: grouped.length, icon: <ClockIcon /> },
+              {
+                label: "Can book",
+                value: desk.canSchedule ? "Yes" : "No",
+                icon: <PlusIcon />,
+                tone: desk.canSchedule ? "good" : "muted",
+              },
+            ]}
+          />
+          {meetings.length > 0 ? (
+            <ChartRow>
+              <ChartPanel title="Meeting sources" className="lg:col-span-4">
+                <SoftDonutChart
+                  data={countBy(meetings, (row) => {
+                    if (row.source.origin === "live") return "Live";
+                    if (row.source.origin === "sample") return "Sample";
+                    if (row.source.origin === "documented") return "Documented";
+                    return "Needs review";
+                  })}
+                  centerLabel="Meetings"
+                  compact
+                />
+              </ChartPanel>
+              <ChartPanel title="By day" className="lg:col-span-8">
+                <SoftProgressTracks data={grouped.map(([day, rows]) => ({ name: dayHeading(day), value: rows.length }))} />
+              </ChartPanel>
+            </ChartRow>
+          ) : null}
           {booking && desk.canSchedule ? (
             <ScheduleForm
               calendars={desk.calendars}
@@ -96,10 +130,10 @@ export function CalendarPage() {
                 }
               />
             ) : (
-              <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
                 {grouped.map(([day, rows]) => (
-                  <div key={day} className="border-b last:border-b-0">
-                    <h3 className="bg-muted/70 px-4 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  <div key={day} className="border-b border-border/60 last:border-b-0">
+                    <h3 className="bg-muted/50 px-5 py-2.5 text-xs font-semibold text-muted-foreground">
                       {dayHeading(day)}
                     </h3>
                     <ul className="list-none p-0">
@@ -144,7 +178,7 @@ export function CalendarPage() {
           </Section>
 
           <Section title="Calendars">
-            <ul className="divide-y overflow-hidden rounded-xl border bg-card p-0 shadow-sm">
+            <ul className="surface divide-y overflow-hidden rounded-2xl bg-card p-0 ring-0">
               {desk.calendars.map((calendar) => (
                 <li key={calendar.id} className="px-4 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -223,7 +257,7 @@ export function CalendarPage() {
               </div>
             </Section>
           ) : null}
-        </>
+        </div>
       ) : null}
     </>
   );
@@ -269,7 +303,7 @@ function ScheduleForm({
   }
 
   return (
-    <form className="rounded-xl border bg-card p-4 shadow-sm sm:p-5" onSubmit={submit}>
+    <form className="surface rounded-2xl bg-card p-4 ring-0 sm:p-5" onSubmit={submit}>
       <div className="mb-4">
         <h2 className="text-sm font-semibold tracking-tight">Book a meeting</h2>
         <p className="mt-1 text-sm text-muted-foreground">Name it, pick a time, and add the people who should get the invite.</p>
@@ -374,7 +408,7 @@ function AvailabilityForm({
   }
 
   return (
-    <form className="rounded-xl border bg-card p-4 shadow-sm" onSubmit={submit}>
+    <form className="surface rounded-2xl bg-card p-4 ring-0" onSubmit={submit}>
       <h3 className="text-sm font-medium">Who is free?</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">Enter the people and the time you have in mind.</p>
       <div className="mt-3 grid gap-3">
@@ -457,7 +491,7 @@ function InvitationEditor({
   if (meetings.length === 0) return null;
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
+    <div className="surface rounded-2xl bg-card p-4 ring-0">
       <h3 className="text-sm font-medium">Guests on a meeting</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">Add someone, mark them optional, or record their reply.</p>
       <div className="mt-3 grid gap-3">

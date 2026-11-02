@@ -6,28 +6,13 @@ import { invalidateSlackCache, slackClient } from "./slack.client.js";
 import { parseBody, postMessageSchema } from "./slack.schema.js";
 
 const OPERATING_MODEL = {
-  bestFit: "Channel updates · recent messages",
-  implementationNote:
-    "The bot reads and posts only in the configured channel. Delete and edit stay in Slack.",
-  operatingModel:
-    "Slack holds the channel thread. ClickUp keeps the task, Calendar keeps the meeting, and Drive keeps the file. Make and Instagram are not written from this screen.",
+  bestFit: "Channel updates",
+  implementationNote: "Reads and posts stay in the configured channel.",
+  operatingModel: "Slack holds channel updates for the operations team.",
   steps: [
-    {
-      name: "Channel",
-      detail: "One configured channel id. Invite the bot before reading or posting.",
-    },
-    {
-      name: "Read",
-      detail: "Executive and manager roles see recent messages from that channel.",
-    },
-    {
-      name: "Post",
-      detail: "Staff can send a short daily update as the Impact Dashboard bot.",
-    },
-    {
-      name: "The rest of the desk",
-      detail: "A Slack post does not create a ClickUp task, Calendar event, or Drive file.",
-    },
+    { name: "Channel", detail: "One configured channel. Invite the bot before reading or posting." },
+    { name: "Read", detail: "Executive and manager roles see recent messages." },
+    { name: "Post", detail: "Staff can send a short update as the Impact Dashboard bot." },
   ],
 };
 
@@ -37,7 +22,7 @@ function sampleMessages(): SlackMessage[] {
       id: "slack-sample-1",
       channelId: "sample",
       channelName: "all-impact-testing",
-      text: "Sample daily update: Calendar and Drive are live on the pilot desk. Slack token path still needs confirmation.",
+      text: "Daily update: Calendar and Drive are connected. Confirm Slack posting access for the operations channel.",
       author: "Sample",
       postedAt: new Date().toISOString(),
       source: {
@@ -55,13 +40,13 @@ export class SlackService {
     if (!isStaff(user)) {
       return {
         items: [] as SlackMessage[],
-        note: "Live Slack stays with executive and manager roles so channel traffic is not copied into other sessions.",
+        note: "Live Slack is limited to executive and manager roles.",
       };
     }
     if (!env.slackBotToken || !env.slackChannelId) {
       return {
         items: sampleMessages(),
-        note: "Slack is not connected. Recent messages stay on labelled sample data.",
+        note: "Slack is not connected. Showing reference channel activity.",
       };
     }
     // Use shared cache — do not force fresh on every desk poll (avoids hammering Slack).
@@ -74,7 +59,7 @@ export class SlackService {
     }
     return {
       items: sampleMessages(),
-      note: live.configured ? `${live.message} Sample messages are shown instead.` : live.message,
+      note: live.configured ? `${live.message} Showing reference messages instead.` : live.message,
     };
   }
 

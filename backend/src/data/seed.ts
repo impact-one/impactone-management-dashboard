@@ -740,20 +740,18 @@ export const budget: Budget = {
   source: {
     origin: "sample",
     system: "Google Sheets",
-    detail:
-      "The live budget dashboard belongs to the IOC finance team. Every figure on this screen is fictional and is here so the layout can be reviewed.",
+    detail: "Reference figures for layout review. The live IOC budget sheet is not connected.",
   },
   lines: [
-    { id: "line-planning", category: "Planning and approvals", amount: 1200000, note: "Sample figure" },
-    { id: "line-design", category: "Design consultants", amount: 2400000, note: "Sample figure" },
-    { id: "line-pm", category: "Project management", amount: 800000, note: "Sample figure" },
-    { id: "line-contingency", category: "Contingency", amount: 600000, note: "Sample figure" },
+    { id: "line-planning", category: "Planning and approvals", amount: 1200000, note: "Reference" },
+    { id: "line-design", category: "Design consultants", amount: 2400000, note: "Reference" },
+    { id: "line-pm", category: "Project management", amount: 800000, note: "Reference" },
+    { id: "line-contingency", category: "Contingency", amount: 600000, note: "Reference" },
   ],
   total: 5000000,
   warnings: [
-    "These numbers are not the IOC budget.",
-    "A live connection waits on finance approval and a read-only share.",
-    "This prototype has no path that writes to the sheet.",
+    "These amounts are reference only, not the live IOC budget.",
+    "A live connection waits on finance approval.",
   ],
 };
 
@@ -899,22 +897,22 @@ export const automations: AutomationFlow[] = [
     title: "Dashboard read path",
     owner: "Pilot",
     summary:
-      "This prototype schedules on Google Calendar and keeps a Drive library when a token is set, and can read ClickUp. It does not post to Slack, Make, or Instagram.",
+      "Management desk with Calendar scheduling, Drive library, Slack updates, and read-only ClickUp where connected.",
     source: {
       origin: "documented",
-      system: "This prototype",
-      detail: "Calendar and Drive can write when a token is set. ClickUp stays GET. Slack, Make, and Instagram have no client.",
+      system: "Impact One desk",
+      detail: "Calendar and Drive can write when a token is set. ClickUp stays read-only.",
     },
     steps: [
-      { name: "Impact sign-in", state: "documented", note: "Local pilot accounts. Not company SSO." },
+      { name: "Impact sign-in", state: "documented", note: "Local accounts for now. Company SSO later." },
       { name: "API modules", state: "documented", note: "Each area has its own route, controller, and service." },
       {
         name: "ClickUp, Calendar, Drive",
         state: "needs-review",
-        note: "Calendar schedules. Drive holds folders and empty files with sharing. ClickUp stays read-only. Sample data until Kulde provides access.",
+        note: "Live access depends on approved credentials for each system.",
       },
     ],
-    reviewFlags: ["Tokens were not provided with the brief."],
+    reviewFlags: ["Confirm live credentials with operations."],
   },
 ];
 

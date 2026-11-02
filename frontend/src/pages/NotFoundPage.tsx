@@ -18,7 +18,7 @@ export function NotFoundPage() {
       <PageHeader
         eyebrow="Dashboard"
         title="Page not found"
-        lede={`“${pathname}” is not part of this pilot. Pick a known route below.`}
+        lede={`“${pathname}” is not a valid route. Choose a page below to continue.`}
       />
       <div className="flex flex-wrap gap-2">
         <Button asChild>

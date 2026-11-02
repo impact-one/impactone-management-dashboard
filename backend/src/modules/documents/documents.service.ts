@@ -9,35 +9,14 @@ import { driveClient, parseLiveId } from "./drive.client.js";
 import { createFileSchema, parseBody, removeShareSchema, shareFileSchema } from "./documents.schema.js";
 
 const LIBRARY = {
-  bestFit: "Document library · sharing",
-  implementationNote: "Sharing is writer, commenter, or reader. Owner stays with the file. File contents stay in Drive.",
-  operatingModel:
-    "Google Drive holds the file. This desk keeps the name, the link, and who can open it. ClickUp keeps the task and Calendar keeps the meeting.",
+  bestFit: "Document library",
+  implementationNote: "Sharing is writer, commenter, or reader. File contents stay in Drive.",
+  operatingModel: "Google Drive holds files; this desk tracks names, links, and access.",
   steps: [
-    {
-      name: "Drive holds the file",
-      detail: "This desk stores the name and the link. File contents stay in Drive.",
-    },
-    {
-      name: "Folders",
-      detail: "Impact files and IOC files group the library. A new Doc or Sheet can sit in a folder.",
-    },
-    {
-      name: "Create",
-      detail: "Executive and manager roles add a folder, an empty Google Doc, or an empty Google Sheet.",
-    },
-    {
-      name: "Sharing",
-      detail: "Writer, commenter, or reader. Owner stays with the file.",
-    },
-    {
-      name: "Budget sheet",
-      detail: "The IOC budget sheet stays with finance and is not opened from this desk.",
-    },
-    {
-      name: "The rest of the desk",
-      detail: "ClickUp keeps the task and Calendar keeps the meeting. A file does not create either, and nothing is posted to Slack.",
-    },
+    { name: "Library", detail: "This desk stores the name and link. File contents stay in Drive." },
+    { name: "Folders", detail: "Impact and IOC folders organise the library." },
+    { name: "Create", detail: "Managers can add a folder, empty Doc, or empty Sheet." },
+    { name: "Sharing", detail: "Writer, commenter, or reader. Owner stays with the file." },
   ],
 };
 
@@ -163,14 +142,14 @@ export class DocumentsService {
     if (!isStaff(user)) {
       return {
         files: local,
-        note: "Live Drive stays with executive and manager roles. Known documents from the brief stay listed.",
+        note: "Live Drive is limited to executive and manager roles.",
         connected: false,
       };
     }
     if (!env.googleAccessToken) {
       return {
         files: local,
-        note: "Google Drive is not connected. Folders, empty Docs and Sheets, and sharing run on the labelled library. File contents stay in Drive.",
+        note: "Google Drive is not connected. Showing the reference document library.",
         connected: false,
       };
     }
@@ -178,13 +157,13 @@ export class DocumentsService {
     if (live.ok && live.data) {
       return {
         files: live.data.map((file) => this.present(user, file)),
-        note: "Live Google Drive files for executive and manager roles. Names and links only. File contents stay in Drive.",
+        note: "Live Google Drive for executive and manager roles. Names and links only.",
         connected: true,
       };
     }
     return {
       files: local,
-      note: live.configured ? `${live.message} The labelled library is shown instead.` : live.message,
+      note: live.configured ? `${live.message} Showing the reference library instead.` : live.message,
       connected: false,
     };
   }

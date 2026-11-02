@@ -15,8 +15,8 @@ const shell =
 export function Due({ value }: { value: string | null }) {
   const state = dueState(value);
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className="text-sm text-foreground">{formatDate(value)}</span>
+    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+      <span className="text-sm whitespace-nowrap text-foreground tabular-nums">{formatDate(value)}</span>
       <Badge variant="outline" className={cn(shell, tones[state])}>
         {dueLabel(state)}
       </Badge>

@@ -8,7 +8,16 @@ import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageH
 import { DetailSkeleton } from "../components/PageSkeleton";
 import { ReviewList, SourceBadge } from "../components/SourceBadge";
 import { MarkIcon } from "../components/marks";
-import { CardGrid, RecordCard, Section } from "../components/Surface";
+import { FileTextIcon, FlagIcon, ListTodoIcon, UsersIcon, LayersIcon } from "lucide-react";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
+import { CardGrid, MetricStrip, RecordCard, Section } from "../components/Surface";
 import { formatMoney, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { Envelope, ProjectDetail, Task } from "../types";
@@ -51,14 +60,57 @@ export function ProjectPage() {
           <p className="mb-3 text-sm text-muted-foreground">{detail.project.source.detail}</p>
           <ReviewList flags={detail.project.reviewFlags} />
           {detail.taskNote || detail.documentNote ? (
-            <Note>
-              {detail.taskNote} {detail.documentNote}
-            </Note>
+            <div className="mb-6">
+              <Note>
+                {detail.taskNote} {detail.documentNote}
+              </Note>
+            </div>
           ) : null}
+
+          <div className="mb-6 space-y-6">
+            <MetricStrip
+              items={[
+                { label: "Workstreams", value: detail.project.workstreams.length, icon: <LayersIcon /> },
+                { label: "Tasks", value: detail.tasks.length, icon: <ListTodoIcon /> },
+                { label: "Documents", value: detail.documents.length, icon: <FileTextIcon /> },
+                { label: "Follow-ups", value: detail.followUps.length, icon: <FlagIcon /> },
+                { label: "Consultants", value: detail.consultants.length, icon: <UsersIcon /> },
+              ]}
+            />
+            <ChartRow>
+              <ChartPanel title="Task status" className="lg:col-span-5">
+                <SoftBarChart
+                  data={countBy(detail.tasks, (row) => plainStatus(row.status))}
+                  layout="horizontal"
+                  compact
+                />
+              </ChartPanel>
+              <ChartPanel title="Task sources" className="lg:col-span-3">
+                <SoftDonutChart
+                  data={countBy(detail.tasks, (row) => {
+                    if (row.source.origin === "live") return "Live";
+                    if (row.source.origin === "sample") return "Sample";
+                    if (row.source.origin === "documented") return "Documented";
+                    return "Needs review";
+                  })}
+                  centerLabel="Tasks"
+                  compact
+                />
+              </ChartPanel>
+              <ChartPanel title="Workstream load" className="lg:col-span-4">
+                <SoftProgressTracks
+                  data={detail.project.workstreams.map((item) => ({
+                    name: item.name,
+                    value: detail.tasks.filter((task) => task.title.toLowerCase().includes(item.name.split(" ")[0]?.toLowerCase() ?? "")).length || 1,
+                  }))}
+                />
+              </ChartPanel>
+            </ChartRow>
+          </div>
 
           <Section title="Workstreams">
             {detail.project.workstreams.length === 0 ? (
-              <EmptyState title="No workstreams listed" description="This project has no workstream rows in the pilot seed." />
+              <EmptyState title="No workstreams listed" description="Workstreams for this project will appear here once they are added." />
             ) : (
               <CardGrid>
                 {detail.project.workstreams.map((item) => (
@@ -107,10 +159,7 @@ export function ProjectPage() {
 
           {detail.teamLiveTasks.length > 0 ? (
             <Section title="Team-wide live tasks">
-              <Note>
-                These ClickUp rows are team-wide (`projectId` unset). They are not claimed for this project; open the
-                team task list for the full live set.
-              </Note>
+              <Note>These live tasks are team-wide and not mapped to this project yet.</Note>
               <DataTable
                 caption="Team-wide live tasks"
                 rows={detail.teamLiveTasks}
@@ -160,7 +209,7 @@ export function ProjectPage() {
 
           {detail.teamLiveDocuments.length > 0 ? (
             <Section title="Team-wide live Drive files">
-              <Note>Live Drive names are team-wide and not mapped to a project id. File contents stay in Drive.</Note>
+              <Note>These Drive files are team-wide and not mapped to this project.</Note>
               <DataTable
                 caption="Team-wide Drive files"
                 rows={detail.teamLiveDocuments}
@@ -226,7 +275,7 @@ export function ProjectPage() {
             <DataTable
               caption={`Consultants for ${detail.project.name}`}
               rows={detail.consultants}
-              empty="No consultants assigned to this project in the pilot seed."
+              empty="No consultants assigned to this project."
               columns={[
                 { key: "role", header: "Role", render: (row) => row.role },
                 { key: "scope", header: "Scope", render: (row) => row.scope },

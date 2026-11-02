@@ -13,17 +13,17 @@ export function PilotPage() {
   return (
     <>
       <PageHeader
-        eyebrow="For Mikolaj"
-        title="Pilot notes"
-        lede="Architecture, access, LibreChat, cost, and the assumptions that still need a yes. This is a prototype, not a production commitment."
+        eyebrow="Control"
+        title="Delivery notes"
+        lede="Architecture, access, cost assumptions, and open decisions for the management desk."
       />
-      {loading && !proposal ? <ProseSkeleton label="Loading pilot notes" /> : null}
+      {loading && !proposal ? <ProseSkeleton label="Loading delivery notes" /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {proposal ? (
         <>
           <nav
-            className="sticky top-14 z-10 -mx-4 mb-4 flex flex-wrap gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur-md md:-mx-6 md:px-6"
-            aria-label="Pilot notes sections"
+            className="sticky top-14 z-10 -mx-3 mb-5 flex flex-wrap gap-2 border-b bg-background/95 px-3 py-2.5 backdrop-blur-md md:-mx-5 md:px-5"
+            aria-label="Delivery notes sections"
           >
             {[
               ["#access", "Access"],

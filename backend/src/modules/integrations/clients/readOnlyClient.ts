@@ -19,7 +19,8 @@ export class ReadOnlyClient<T> {
   ) {}
 
   async get(): Promise<LiveResult<T>> {
-    if (this.cache && Date.now() - this.cache.at < 60_000) return this.cache.result;
+    // Keep ClickUp reads soft-cached so deletes/creates show within ~10s on refresh.
+    if (this.cache && Date.now() - this.cache.at < 10_000) return this.cache.result;
     if (this.pending) return this.pending;
 
     this.pending = this.read().finally(() => {

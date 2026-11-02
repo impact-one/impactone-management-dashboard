@@ -1,11 +1,21 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { ListTodoIcon, CircleAlertIcon, RadioIcon, FolderKanbanIcon } from "lucide-react";
+import {
+  ChartPanel,
+  ChartRow,
+  SoftBarChart,
+  SoftDonutChart,
+  SoftProgressTracks,
+  countBy,
+} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
+import { MetricStrip } from "../components/Surface";
 import { dueState, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { Envelope, Origin, Task } from "../types";
@@ -32,18 +42,54 @@ export function TasksPage() {
     return true;
   });
 
+  const statusMix = useMemo(() => countBy(tasks, (task) => plainStatus(task.status)), [tasks]);
+  const originMix = useMemo(
+    () =>
+      countBy(tasks, (task) => {
+        if (task.source.origin === "live") return "Live";
+        if (task.source.origin === "sample") return "Sample";
+        if (task.source.origin === "documented") return "Documented";
+        return "Needs review";
+      }),
+    [tasks],
+  );
+  const projectMix = useMemo(() => countBy(tasks, (task) => task.projectName).slice(0, 6), [tasks]);
+  const openCount = tasks.filter((task) => task.status === "open" || task.status === "in-progress").length;
+  const overdueCount = tasks.filter((task) => dueState(task.dueDate) === "overdue").length;
+  const liveCount = tasks.filter((task) => task.source.origin === "live").length;
+
   return (
     <>
       <PageHeader
         eyebrow="Work"
         title="Tasks"
-        lede="Responsibilities and deadlines in one list. ClickUp rows stay labelled until a read-only token is connected."
+        lede="Track ownership, status, and due dates across Impact One and IOC work."
       />
       {loading && !data ? <TablePageSkeleton label="Loading tasks" columns={7} filters={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
-      {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
+      {data?.meta.note ? <div className="mb-6"><Note>{data.meta.note}</Note></div> : null}
       {data ? (
-        <>
+        <div className="space-y-6">
+          <MetricStrip
+            items={[
+              { label: "Total tasks", value: tasks.length, icon: <ListTodoIcon /> },
+              { label: "Open / active", value: openCount, icon: <FolderKanbanIcon /> },
+              { label: "Overdue", value: overdueCount, icon: <CircleAlertIcon /> },
+              { label: "Live rows", value: liveCount, icon: <RadioIcon /> },
+              { label: "Projects", value: projects.length, icon: <FolderKanbanIcon /> },
+            ]}
+          />
+          <ChartRow>
+            <ChartPanel title="Status mix" description="Across the full task list" className="lg:col-span-5">
+              <SoftBarChart data={statusMix} layout="horizontal" compact />
+            </ChartPanel>
+            <ChartPanel title="Source mix" description="Live vs reference data" className="lg:col-span-3">
+              <SoftDonutChart data={originMix} centerLabel="Sources" compact />
+            </ChartPanel>
+            <ChartPanel title="By project" description="Top workstreams" className="lg:col-span-4">
+              <SoftProgressTracks data={projectMix} />
+            </ChartPanel>
+          </ChartRow>
           <FilterBar className="lg:grid-cols-4">
             <FilterSearch id="task-search" label="Search tasks" value={query} onChange={setQuery} />
             <FilterSelect
@@ -124,7 +170,7 @@ export function TasksPage() {
               { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
             ]}
           />
-        </>
+        </div>
       ) : null}
     </>
   );

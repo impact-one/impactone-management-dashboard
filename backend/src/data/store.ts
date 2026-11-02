@@ -12,6 +12,7 @@ import {
   followUps,
   meetings,
   milestones,
+  sharedCalendars,
   projects,
   tasks,
   userSeeds,
@@ -31,7 +32,8 @@ class Store {
   automations = automations;
   catalogTools = catalogTools;
   dataSources = dataSources;
-  meetings = meetings;
+  meetings = structuredClone(meetings);
+  calendars = structuredClone(sharedCalendars);
   audit: AuditEvent[] = [];
   ready = false;
 }

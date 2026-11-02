@@ -176,14 +176,90 @@ export interface DataSourceRecord {
   source: DataSource;
 }
 
+export type CalendarAccess = "owner" | "writer" | "reader" | "freeBusyReader";
+export type InvitationResponse = "needsAction" | "accepted" | "declined" | "tentative";
+
+export interface MeetingInvitation {
+  email: string;
+  name: string;
+  response: InvitationResponse;
+  optional: boolean;
+}
+
+export interface MeetingReminder {
+  method: "email" | "popup";
+  minutesBefore: number;
+}
+
 export interface Meeting {
   id: string;
   title: string;
   date: string | null;
   timeLabel: string;
   owner: string;
+  ownerEmail: string;
   source: DataSource;
   href: string | null;
+  calendarId: string;
+  calendarName: string;
+  timeZone: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  location: string;
+  invitations: MeetingInvitation[];
+  reminders: MeetingReminder[];
+}
+
+export interface CalendarShare {
+  email: string;
+  role: CalendarAccess;
+}
+
+export interface SharedCalendar {
+  id: string;
+  name: string;
+  timeZone: string;
+  accessRole: CalendarAccess;
+  primary: boolean;
+  shares: CalendarShare[];
+  source: DataSource;
+}
+
+export interface BusyBlock {
+  start: string;
+  end: string;
+  title: string | null;
+}
+
+export interface AvailabilityPerson {
+  email: string;
+  busy: BusyBlock[];
+  warning: string | null;
+}
+
+export interface AvailabilityReport {
+  timeZone: string;
+  windowStart: string;
+  windowEnd: string;
+  clear: boolean;
+  people: AvailabilityPerson[];
+}
+
+export interface OperatingModelStep {
+  name: string;
+  detail: string;
+}
+
+export interface CalendarDesk {
+  connected: boolean;
+  timeZone: string;
+  canSchedule: boolean;
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  steps: OperatingModelStep[];
+  calendars: SharedCalendar[];
+  meetings: Meeting[];
 }
 
 export interface AuditEvent {
@@ -200,7 +276,7 @@ export interface AuditEvent {
 export interface IntegrationStatus {
   id: string;
   name: string;
-  mode: "read-only" | "not-connected";
+  mode: "read-only" | "schedule" | "not-connected";
   configured: boolean;
   origin: Origin;
   detail: string;

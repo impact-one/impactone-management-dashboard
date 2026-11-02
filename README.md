@@ -2,7 +2,7 @@
 
 Pilot prototype for Impact One and IOC. It is a read-only management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
 
-It does not post, edit, or delete in Slack, ClickUp, Drive, Calendar, Make, or Instagram.
+Google Calendar is the scheduling system: meetings, invitations, availability, and shared calendars. ClickUp and Drive stay read-only. It does not post, edit, or delete in Slack, Make, or Instagram.
 
 ## Run locally
 

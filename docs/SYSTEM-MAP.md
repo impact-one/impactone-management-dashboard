@@ -19,7 +19,7 @@ One page for the Day 1 review. The same picture is in the app under System map. 
 
 1. Local pilot sign-in.
 2. API modules, one per area.
-3. ClickUp, Calendar, and Drive — read-only adapters, sample data until access exists.
+3. ClickUp and Drive stay read-only. Google Calendar schedules meetings, invitations, availability, and sharing. Sample data until access exists.
 
 ## Tools already named
 
@@ -32,7 +32,7 @@ ChatGPT, Claude, Cursor, and Plaud are licences on Kulde's tracker. Their workfl
 | Source | Owner | Reuse |
 | --- | --- | --- |
 | ClickUp | Team | Tasks, once a read token exists |
-| Google Calendar | Team | Meetings, read-only |
+| Google Calendar | Team | Meetings, invitations, availability, and sharing |
 | Google Drive | Team | Document names and links |
 | IOC budget sheet | IOC finance | Only after approval. Sample until then |
 | Access tracker | Kulde | Tool catalogue. Link not provided |

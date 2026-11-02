@@ -1,8 +1,8 @@
 import type { IntegrationStatus, Origin } from "../../types/domain.js";
-import { calendarClient } from "./clients/calendar.client.js";
+import { calendarClient } from "../calendar/calendar.client.js";
+import type { LiveResult } from "./clients/readOnlyClient.js";
 import { clickUpClient } from "./clients/clickup.client.js";
 import { driveClient } from "./clients/drive.client.js";
-import type { LiveResult } from "./clients/readOnlyClient.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
   if (!result.configured) {
@@ -41,6 +41,43 @@ function fromClient(id: string, name: string, result: LiveResult<unknown>): Inte
   };
 }
 
+function calendarStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "calendar",
+      name: "Google Calendar",
+      mode: "schedule",
+      configured: false,
+      origin: "sample",
+      detail: "Meetings, invitations, availability, and shared calendars run on the labelled workspace in Asia/Riyadh.",
+      limitation: "A Google token with events, free/busy, and ACL scopes sends those changes to Calendar. Owner is never granted here.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "calendar",
+      name: "Google Calendar",
+      mode: "schedule",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "calendar",
+    name: "Google Calendar",
+    mode: "schedule",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Each event keeps its time zone. Sharing can be writer, reader, or free/busy.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
 function absent(id: string, name: string, detail: string, limitation: string, origin: Origin = "documented"): IntegrationStatus {
   return {
     id,
@@ -59,7 +96,7 @@ export class IntegrationsService {
     const [clickup, calendar, drive] = await Promise.all([clickUpClient.get(), calendarClient.get(), driveClient.get()]);
     return [
       fromClient("clickup", "ClickUp", clickup),
-      fromClient("calendar", "Google Calendar", calendar),
+      calendarStatus(calendar),
       fromClient("drive", "Google Drive", drive),
       absent(
         "slack",

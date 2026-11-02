@@ -212,12 +212,12 @@ export function AppShell() {
                 className="h-7 gap-1.5 border-[var(--badge-shell-border)] bg-[var(--brand-soft)] px-2.5 text-xs font-medium text-foreground"
               >
                 <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-                Read-only
+                Pilot
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Sample and Needs review are not live records. This desk cannot post, edit, or delete in Slack, ClickUp,
-              Drive, or Calendar.
+              Google Calendar schedules meetings, invitations, availability, and sharing for executive and manager roles.
+              Slack, ClickUp, Drive, Make, and Instagram are not changed from this desk.
             </TooltipContent>
           </Tooltip>
         </header>

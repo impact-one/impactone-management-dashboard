@@ -3,9 +3,9 @@
 ## Rules this prototype follows
 
 - Code and future credentials stay in Impact accounts. Nothing here is wired to a personal Slack, ClickUp, or Google account.
-- No route creates, edits, posts, or deletes in a live tool.
 - Slack, Make, Instagram, and Google Sheets have no client, so a token for them cannot be used by this app.
-- ClickUp, Calendar, and Drive clients send GET only, with an 8-second timeout.
+- ClickUp and Drive clients send GET only, with an 8-second timeout.
+- Google Calendar can schedule meetings, update invitations, read free/busy, and set sharing. It cannot grant the owner role.
 - Confidential budget figures are not copied from the finance sheet. The screen uses a fictional sample and says so.
 - Live team-wide exports (ClickUp, Calendar, Drive) return only to executive and manager roles.
 - Consultant fees are hidden from consultant and viewer roles.
@@ -22,7 +22,7 @@
 | Need | Scope | Why |
 | --- | --- | --- |
 | ClickUp | Read tasks on the relevant team | Replace sample tasks. Team id plus a read token |
-| Google Calendar | `calendar.readonly` | List events. Do not grant write |
+| Google Calendar | Calendar events, free/busy, and ACL | Schedule, invite, check availability, and set sharing. Do not grant a token that can transfer ownership |
 | Google Drive | `drive.readonly` metadata | Names and links. Contents are not required for the pilot |
 | IOC budget sheet | None until finance agrees | A snapshot or a read-only share. Not a token with edit rights |
 
@@ -32,6 +32,6 @@ Access should be removed at the end of the pilot if it was granted only for this
 
 - The audit trail is in memory and disappears on restart.
 - Demo accounts share one password and are not SSO.
-- A Google token that was issued with extra scopes is still unable to write through this API, but it should not be issued that way.
+- A Google token used here can create and update calendar events. Keep it on an Impact account. Sharing from this desk cannot grant owner.
 - Task titles from a live ClickUp read can be sensitive. That is why viewers and consultants do not receive them.
 - This repository must not be pushed to a personal Git host. Use the Impact company repository when one is provided.

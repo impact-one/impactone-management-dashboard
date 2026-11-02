@@ -17,7 +17,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | milestones | `GET /api/milestones` | Placeholder IOC milestones |
 | consultants | `GET /api/consultants` | Directory. Fees hidden outside staff roles |
 | budgets | `GET /api/budgets` | Staff only. Fictional figures |
-| calendar | `GET /api/calendar` | Sample meetings, plus read-only Calendar for staff |
+| calendar | `GET /api/calendar`, `GET /api/calendar/desk`, `POST /api/calendar/meetings`, invitations, availability, sharing | Schedule, invite, free/busy, and sharing for staff. Sample workspace until a token is set |
 | ai-tools | `GET /api/ai-tools` | Catalogue and empty agent list |
 | automations | `GET /api/automations` | Known flows |
 | integrations | `GET /api/integrations` | Adapter status and limits |
@@ -25,7 +25,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | audit | `GET /api/audit` | Staff only |
 | proposal | `GET /api/proposal` | Access model, LibreChat, cost, assumptions |
 
-CORS allows GET and POST only. POST is sign-in. External clients hard-code HTTP GET.
+CORS allows GET and POST. POST is sign-in and Google Calendar scheduling. ClickUp and Drive clients still send GET only.
 
 ## When a token is missing
 
@@ -33,4 +33,4 @@ The service keeps the labelled sample and says so. The screen does not go blank,
 
 ## What this does not include
 
-Company SSO, a database, LibreChat, a Slack or Make client, a Sheets client, and any write to a live tool.
+Company SSO, a database, LibreChat, a Slack or Make client, a Sheets client, and writes to ClickUp, Drive, Slack, or Instagram. Calendar scheduling is the live write.

@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
-import { Loading, PageHeader, RetryableError } from "../components/PageHeader";
+import { PageHeader, RetryableError } from "../components/PageHeader";
+import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { dueState, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -37,40 +38,40 @@ export function FollowUpsPage() {
         title="Follow-ups"
         lede="The open questions from the pilot brief: access, IOC confirmation, finance, and the demo with Mikolaj."
       />
-      {loading && !data ? <Loading label="Loading follow-ups" /> : null}
+      {loading && !data ? <TablePageSkeleton label="Loading follow-ups" columns={6} filters={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
-      <FilterBar>
-        <FilterSearch id="follow-search" label="Search follow-ups" value={query} onChange={setQuery} />
-        <FilterSelect
-          id="follow-project"
-          label="Project"
-          value={project}
-          onChange={setProject}
-          options={[{ value: "all", label: "All projects" }, ...projects.map((name) => ({ value: name, label: name }))]}
-        />
-        <FilterSelect
-          id="follow-status"
-          label="Status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "all", label: "All statuses" },
-            ...statuses.map((item) => ({ value: item, label: plainStatus(item) })),
-          ]}
-        />
-        <FilterOrigin value={origin} onChange={setOrigin} />
-        <label className="flex h-9 items-end gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={overdueOnly}
-            onChange={(event) => setOverdueOnly(event.target.checked)}
-          />
-          Overdue only
-        </label>
-      </FilterBar>
       {data ? (
         <>
+          <FilterBar>
+            <FilterSearch id="follow-search" label="Search follow-ups" value={query} onChange={setQuery} />
+            <FilterSelect
+              id="follow-project"
+              label="Project"
+              value={project}
+              onChange={setProject}
+              options={[{ value: "all", label: "All projects" }, ...projects.map((name) => ({ value: name, label: name }))]}
+            />
+            <FilterSelect
+              id="follow-status"
+              label="Status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "all", label: "All statuses" },
+                ...statuses.map((item) => ({ value: item, label: plainStatus(item) })),
+              ]}
+            />
+            <FilterOrigin value={origin} onChange={setOrigin} />
+            <label className="flex h-9 items-end gap-2 text-sm sm:col-span-2">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={overdueOnly}
+                onChange={(event) => setOverdueOnly(event.target.checked)}
+              />
+              Overdue only
+            </label>
+          </FilterBar>
           <ResultCount shown={visible.length} total={rows.length} label="follow-ups" />
           <DataTable
             caption="Follow-ups"

@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { dueState, plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -38,41 +39,41 @@ export function TasksPage() {
         title="Tasks"
         lede="Responsibilities and deadlines in one list. ClickUp rows stay labelled until a read-only token is connected."
       />
-      {loading && !data ? <Loading label="Loading tasks" /> : null}
+      {loading && !data ? <TablePageSkeleton label="Loading tasks" columns={7} filters={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
-      <FilterBar className="lg:grid-cols-4">
-        <FilterSearch id="task-search" label="Search tasks" value={query} onChange={setQuery} />
-        <FilterSelect
-          id="task-project"
-          label="Project"
-          value={project}
-          onChange={setProject}
-          options={[{ value: "all", label: "All projects" }, ...projects.map((name) => ({ value: name, label: name }))]}
-        />
-        <FilterSelect
-          id="task-status"
-          label="Status"
-          value={status}
-          onChange={(value) => setStatus(value as (typeof statuses)[number])}
-          options={statuses.map((item) => ({
-            value: item,
-            label: item === "all" ? "All statuses" : plainStatus(item),
-          }))}
-        />
-        <FilterOrigin value={origin} onChange={setOrigin} />
-        <label className="flex h-9 items-end gap-2 text-sm sm:col-span-2 lg:col-span-4">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={overdueOnly}
-            onChange={(event) => setOverdueOnly(event.target.checked)}
-          />
-          Overdue only
-        </label>
-      </FilterBar>
       {data ? (
         <>
+          <FilterBar className="lg:grid-cols-4">
+            <FilterSearch id="task-search" label="Search tasks" value={query} onChange={setQuery} />
+            <FilterSelect
+              id="task-project"
+              label="Project"
+              value={project}
+              onChange={setProject}
+              options={[{ value: "all", label: "All projects" }, ...projects.map((name) => ({ value: name, label: name }))]}
+            />
+            <FilterSelect
+              id="task-status"
+              label="Status"
+              value={status}
+              onChange={(value) => setStatus(value as (typeof statuses)[number])}
+              options={statuses.map((item) => ({
+                value: item,
+                label: item === "all" ? "All statuses" : plainStatus(item),
+              }))}
+            />
+            <FilterOrigin value={origin} onChange={setOrigin} />
+            <label className="flex h-9 items-end gap-2 text-sm sm:col-span-2 lg:col-span-4">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={overdueOnly}
+                onChange={(event) => setOverdueOnly(event.target.checked)}
+              />
+              Overdue only
+            </label>
+          </FilterBar>
           <ResultCount shown={visible.length} total={tasks.length} label="tasks" />
           <DataTable
             caption="Tasks and deadlines"

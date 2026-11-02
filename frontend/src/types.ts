@@ -273,6 +273,29 @@ export interface CalendarDesk {
   meetings: Meeting[];
 }
 
+export interface SlackMessage {
+  id: string;
+  channelId: string;
+  channelName: string;
+  text: string;
+  author: string;
+  postedAt: string;
+  source: DataSource;
+  href: string | null;
+}
+
+export interface SlackDesk {
+  connected: boolean;
+  canPost: boolean;
+  channelId: string | null;
+  channelName: string;
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  steps: { name: string; detail: string }[];
+  messages: SlackMessage[];
+}
+
 export interface IntegrationStatus {
   id: string;
   name: string;

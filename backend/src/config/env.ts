@@ -25,4 +25,6 @@ export const env = {
   clickupTeamId: optional("CLICKUP_TEAM_ID"),
   googleAccessToken: optional("GOOGLE_ACCESS_TOKEN"),
   googleCalendarId: process.env.GOOGLE_CALENDAR_ID?.trim() || "primary",
+  slackBotToken: optional("SLACK_BOT_TOKEN"),
+  slackChannelId: optional("SLACK_CHANNEL_ID"),
 };

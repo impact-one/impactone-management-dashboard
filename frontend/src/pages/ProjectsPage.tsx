@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
 import { MarkIcon } from "../components/marks";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { CardsSkeleton } from "../components/PageSkeleton";
 import { CardGrid, RecordCard } from "../components/Surface";
 import { plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -52,61 +53,65 @@ export function ProjectsPage() {
           </div>
         ) : null}
       </PageHeader>
-      {loading && !data ? <Loading label="Loading projects" /> : null}
+      {loading && !data ? <CardsSkeleton label="Loading projects" count={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {roleNote ? <Note>{roleNote}</Note> : null}
-      <FilterBar>
-        <FilterSearch id="project-search" label="Search projects" value={query} onChange={setQuery} />
-        <FilterSelect
-          id="project-org"
-          label="Organisation"
-          value={org}
-          onChange={setOrg}
-          options={[{ value: "all", label: "All organisations" }, ...orgs.map((name) => ({ value: name, label: name }))]}
-        />
-        <FilterSelect
-          id="project-status"
-          label="Status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "all", label: "All statuses" },
-            ...statuses.map((item) => ({ value: item, label: plainStatus(item) })),
-          ]}
-        />
-        <FilterOrigin value={origin} onChange={setOrigin} />
-      </FilterBar>
-      {data ? <ResultCount shown={visible.length} total={projects.length} label="projects" /> : null}
-      {data && visible.length === 0 ? (
-        <EmptyState
-          title="No projects match"
-          description="Try clearing search or origin filters. Role visibility can also hide some workstreams."
-        />
-      ) : (
-        <CardGrid>
-          {visible.map((project) => (
-            <li key={project.id}>
-              <RecordCard
-                kicker={project.organisation}
-                title={
-                  <Link className="hover:text-primary" to={`/projects/${project.id}`}>
-                    {project.name}
-                  </Link>
-                }
-                origin={project.source.origin}
-                summary={project.summary}
-                mark={<MarkIcon name={project.name} />}
-                fields={[
-                  { label: "Owner", value: project.owner },
-                  { label: "Status", value: <span className="capitalize">{plainStatus(project.status)}</span> },
-                  { label: "Source", value: project.source.system, wide: true },
-                ]}
-                flags={project.reviewFlags}
-              />
-            </li>
-          ))}
-        </CardGrid>
-      )}
+      {data ? (
+        <>
+          <FilterBar>
+            <FilterSearch id="project-search" label="Search projects" value={query} onChange={setQuery} />
+            <FilterSelect
+              id="project-org"
+              label="Organisation"
+              value={org}
+              onChange={setOrg}
+              options={[{ value: "all", label: "All organisations" }, ...orgs.map((name) => ({ value: name, label: name }))]}
+            />
+            <FilterSelect
+              id="project-status"
+              label="Status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "all", label: "All statuses" },
+                ...statuses.map((item) => ({ value: item, label: plainStatus(item) })),
+              ]}
+            />
+            <FilterOrigin value={origin} onChange={setOrigin} />
+          </FilterBar>
+          <ResultCount shown={visible.length} total={projects.length} label="projects" />
+          {visible.length === 0 ? (
+            <EmptyState
+              title="No projects match"
+              description="Try clearing search or origin filters. Role visibility can also hide some workstreams."
+            />
+          ) : (
+            <CardGrid>
+              {visible.map((project) => (
+                <li key={project.id}>
+                  <RecordCard
+                    kicker={project.organisation}
+                    title={
+                      <Link className="hover:text-primary" to={`/projects/${project.id}`}>
+                        {project.name}
+                      </Link>
+                    }
+                    origin={project.source.origin}
+                    summary={project.summary}
+                    mark={<MarkIcon name={project.name} />}
+                    fields={[
+                      { label: "Owner", value: project.owner },
+                      { label: "Status", value: <span className="capitalize">{plainStatus(project.status)}</span> },
+                      { label: "Source", value: project.source.system, wide: true },
+                    ]}
+                    flags={project.reviewFlags}
+                  />
+                </li>
+              ))}
+            </CardGrid>
+          )}
+        </>
+      ) : null}
     </>
   );
 }

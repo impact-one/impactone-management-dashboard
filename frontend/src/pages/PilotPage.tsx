@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Loading, PageHeader, RetryableError } from "../components/PageHeader";
+import { PageHeader, RetryableError } from "../components/PageHeader";
+import { ProseSkeleton } from "../components/PageSkeleton";
 import { MarkIcon } from "../components/marks";
 import { CardGrid, Panel, RecordCard, Section } from "../components/Surface";
 import { useApi } from "../lib/useApi";
@@ -16,7 +17,7 @@ export function PilotPage() {
         title="Pilot notes"
         lede="Architecture, access, LibreChat, cost, and the assumptions that still need a yes. This is a prototype, not a production commitment."
       />
-      {loading && !proposal ? <Loading label="Loading pilot notes" /> : null}
+      {loading && !proposal ? <ProseSkeleton label="Loading pilot notes" /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {proposal ? (
         <>

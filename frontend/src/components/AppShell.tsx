@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../app/AuthContext";
 import { Logo } from "./Logo";
+import { SlackIcon } from "./SlackIcon";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -118,6 +119,7 @@ export function AppShell() {
         { to: "/calendar", label: "Agenda", icon: CalendarDaysIcon },
         { to: "/documents", label: "Documents", icon: FileTextIcon },
         { to: "/follow-ups", label: "Follow-ups", icon: MessageSquareIcon },
+        { to: "/slack", label: "Slack", icon: SlackIcon },
       ],
     },
     {
@@ -216,8 +218,8 @@ export function AppShell() {
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Google Calendar schedules meetings. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing,
-              for executive and manager roles. Slack, ClickUp, Make, and Instagram are not changed from this desk.
+              Google Calendar schedules meetings. Google Drive keeps the library. Slack posts channel updates for executive and
+              manager roles. ClickUp stays read-only. Make and Instagram are not changed from this desk.
             </TooltipContent>
           </Tooltip>
         </header>

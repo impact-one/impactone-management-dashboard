@@ -2,7 +2,7 @@
 
 Pilot prototype for Impact One and IOC. It is a management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
 
-Google Calendar schedules meetings, invitations, availability, and shared calendars. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing. ClickUp stays read-only. It does not post to Slack, Make, or Instagram. File contents stay in Drive.
+Google Calendar schedules meetings, invitations, availability, and shared calendars. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. ClickUp stays read-only. It does not post to Make or Instagram. File contents stay in Drive.
 
 ## Run locally
 
@@ -47,11 +47,11 @@ frontend/src/pages/
 docs/
 ```
 
-Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, ai-tools, automations, integrations, system-map, audit, proposal.
+Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, slack, ai-tools, automations, integrations, system-map, audit, proposal.
 
 ## Data labels
 
-- **Live** — connected to ClickUp, Calendar, or Drive during this session.
+- **Live** — connected to ClickUp, Calendar, Drive, or Slack during this session.
 - **Sample** — fictional or placeholder, safe to show without the real file.
 - **Documented** — stated in the pilot brief.
 - **Needs review** — unknown. Not guessed.
@@ -62,4 +62,5 @@ Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, co
 - [Architecture](docs/ARCHITECTURE.md)
 - [Access and security](docs/ACCESS-AND-SECURITY.md)
 - [System map](docs/SYSTEM-MAP.md)
+- [Slack setup](docs/SLACK-INTEGRATION.md)
 - [Cost estimate](docs/COST-ESTIMATE.md)

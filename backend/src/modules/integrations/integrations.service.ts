@@ -3,6 +3,7 @@ import { calendarClient } from "../calendar/calendar.client.js";
 import type { LiveResult } from "./clients/readOnlyClient.js";
 import { clickUpClient } from "./clients/clickup.client.js";
 import { driveClient } from "../documents/drive.client.js";
+import { slackClient } from "../slack/slack.client.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
   if (!result.configured) {
@@ -128,19 +129,56 @@ function absent(id: string, name: string, detail: string, limitation: string, or
   };
 }
 
+function slackStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "slack",
+      name: "Slack",
+      mode: "channel",
+      configured: false,
+      origin: "sample",
+      detail: "Recent channel messages and daily updates run on labelled sample data.",
+      limitation: "Set SLACK_BOT_TOKEN and SLACK_CHANNEL_ID, then invite the bot to the channel.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "slack",
+      name: "Slack",
+      mode: "channel",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "slack",
+    name: "Slack",
+    mode: "channel",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Posts as the bot. Edit and delete stay in Slack.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
 export class IntegrationsService {
   async list(): Promise<IntegrationStatus[]> {
-    const [clickup, calendar, drive] = await Promise.all([clickUpClient.get(), calendarClient.get(), driveClient.get()]);
+    const [clickup, calendar, drive, slack] = await Promise.all([
+      clickUpClient.get(),
+      calendarClient.get(),
+      driveClient.get(),
+      slackClient.get(),
+    ]);
     return [
       fromClient("clickup", "ClickUp", clickup),
       calendarStatus(calendar),
       driveStatus(drive),
-      absent(
-        "slack",
-        "Slack",
-        "No Slack client is included, so this API cannot post, edit, or delete messages.",
-        "Intake channel name was not provided.",
-      ),
+      slackStatus(slack),
       absent(
         "sheets",
         "IOC budget Google Sheet",

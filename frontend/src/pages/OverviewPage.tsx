@@ -3,7 +3,8 @@ import { CalendarDaysIcon, FolderKanbanIcon, ListTodoIcon, MessageSquareIcon, Sp
 import { Button } from "@/components/ui/button";
 import { Due } from "../components/Due";
 import { EmptyState } from "../components/EmptyState";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { OverviewSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { MarkIcon } from "../components/marks";
 import { CardGrid, MetricStrip, Panel, RecordCard, Section } from "../components/Surface";
@@ -22,7 +23,7 @@ export function OverviewPage() {
         title="Overview"
         lede="Projects, deadlines, follow-ups, and the tools this pilot can already name. Live connections appear only when read-only access is configured."
       />
-      {loading && !dashboard ? <Loading label="Loading overview" /> : null}
+      {loading && !dashboard ? <OverviewSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {dashboard ? <Overview dashboard={dashboard} /> : null}
     </>

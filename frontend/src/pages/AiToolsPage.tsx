@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterOrigin, FilterSearch, ResultCount } from "../components/FilterBar";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { CardsSkeleton } from "../components/PageSkeleton";
 import { CardGrid, RecordCard, Section } from "../components/Surface";
 import { plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -70,7 +71,7 @@ export function AiToolsPage() {
           </dl>
         ) : null}
       </PageHeader>
-      {loading && !catalog ? <Loading label="Loading AI tools" /> : null}
+      {loading && !catalog ? <CardsSkeleton label="Loading AI tools" /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
       {catalog ? (

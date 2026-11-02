@@ -5,7 +5,8 @@ import { useAuth } from "../app/AuthContext";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { TablePageSkeleton } from "../components/PageSkeleton";
 import { formatWhen } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import type { AuditEvent, Envelope } from "../types";
@@ -54,24 +55,24 @@ export function AuditPage() {
         title="Audit trail"
         lede="Who opened which route during this API process. Passwords, tokens, and response bodies are not stored."
       />
-      {loading && !data ? <Loading label="Loading audit trail" /> : null}
+      {loading && !data ? <TablePageSkeleton label="Loading audit trail" columns={5} filters={2} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
-      <FilterBar>
-        <FilterSearch id="audit-search" label="Search audit" value={query} onChange={setQuery} placeholder="Email or action…" />
-        <FilterSelect
-          id="audit-role"
-          label="Role"
-          value={role}
-          onChange={setRole}
-          options={[
-            { value: "all", label: "All roles" },
-            ...roles.map((item) => ({ value: item, label: item })),
-          ]}
-        />
-      </FilterBar>
       {data ? (
         <>
+          <FilterBar>
+            <FilterSearch id="audit-search" label="Search audit" value={query} onChange={setQuery} placeholder="Email or action…" />
+            <FilterSelect
+              id="audit-role"
+              label="Role"
+              value={role}
+              onChange={setRole}
+              options={[
+                { value: "all", label: "All roles" },
+                ...roles.map((item) => ({ value: item, label: item })),
+              ]}
+            />
+          </FilterBar>
           <ResultCount shown={visible.length} total={rows.length} label="events" />
           <DataTable
             caption="Recent reads"

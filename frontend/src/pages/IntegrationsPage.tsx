@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "../components/DataTable";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { TablePageSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { formatWhen, plainStatus } from "../lib/format";
@@ -37,28 +38,28 @@ export function IntegrationsPage() {
       <PageHeader
         eyebrow="Control"
         title="Integrations"
-        lede="Google Calendar schedules meetings. Google Drive keeps folders, empty Docs and Sheets, and sharing. ClickUp stays read-only. Slack, Make, Instagram, and the budget sheet have no client."
+        lede="Google Calendar schedules meetings. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one channel. ClickUp stays read-only. Make, Instagram, and the budget sheet have no client."
       />
-      {loading && !data ? <Loading label="Checking integrations" /> : null}
+      {loading && !data ? <TablePageSkeleton label="Checking integrations" columns={7} filters={3} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
-      <FilterBar>
-        <FilterSearch id="int-search" label="Search integrations" value={query} onChange={setQuery} />
-        <FilterOrigin value={origin} onChange={setOrigin} />
-        <FilterSelect
-          id="int-group"
-          label="Group"
-          value={group}
-          onChange={(value) => setGroup(value as typeof group)}
-          options={[
-            { value: "all", label: "All systems" },
-            { value: "configured", label: "Token path configured" },
-            { value: "documented", label: "Documented only" },
-          ]}
-        />
-      </FilterBar>
       {data ? (
         <>
+          <FilterBar>
+            <FilterSearch id="int-search" label="Search integrations" value={query} onChange={setQuery} />
+            <FilterOrigin value={origin} onChange={setOrigin} />
+            <FilterSelect
+              id="int-group"
+              label="Group"
+              value={group}
+              onChange={(value) => setGroup(value as typeof group)}
+              options={[
+                { value: "all", label: "All systems" },
+                { value: "configured", label: "Token path configured" },
+                { value: "documented", label: "Documented only" },
+              ]}
+            />
+          </FilterBar>
           <p className="mb-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">{configured.length} with token path</Badge>
             <Badge variant="outline">{documented.length} documented only</Badge>

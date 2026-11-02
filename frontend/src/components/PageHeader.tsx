@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { CircleAlertIcon, InfoIcon, RefreshCwIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTitle } from "../lib/useTitle";
 
 export function PageHeader({
@@ -26,19 +25,6 @@ export function PageHeader({
       </div>
       {children}
     </header>
-  );
-}
-
-export function Loading({ label }: { label: string }) {
-  return (
-    <div className="mb-6 grid gap-3" role="status" aria-label={label}>
-      <Skeleton className="h-8 w-48" />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Skeleton className="h-24 rounded-lg" />
-        <Skeleton className="h-24 rounded-lg" />
-        <Skeleton className="h-24 rounded-lg" />
-      </div>
-    </div>
   );
 }
 

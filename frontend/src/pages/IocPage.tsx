@@ -3,7 +3,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "../app/AuthContext";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
-import { Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { IocSkeleton, SectionTableSkeleton } from "../components/PageSkeleton";
 import { ReviewList, SourceBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { formatMoney, plainStatus } from "../lib/format";
@@ -42,9 +43,7 @@ export function IocPage() {
         </Button>
       </nav>
 
-      {loadingShell && !consultants.data && !milestones.data && !budget.data ? (
-        <Loading label="Loading IOC desk" />
-      ) : null}
+      {loadingShell && !consultants.data && !milestones.data && !budget.data ? <IocSkeleton /> : null}
       {anyError && !consultants.data && !milestones.data && !budget.data ? (
         <RetryableError
           message={consultants.error || milestones.error || budget.error || "Request failed."}
@@ -56,9 +55,12 @@ export function IocPage() {
         />
       ) : null}
 
+      {consultants.data || milestones.data || budget.data || !loadingShell ? (
+        <>
       <Section id="consultants" title="Consultants">
         {consultants.error ? <RetryableError message={consultants.error} onRetry={consultants.reload} /> : null}
         {consultants.data?.meta.note ? <Note>{consultants.data.meta.note}</Note> : null}
+        {consultants.loading && !consultants.data ? <SectionTableSkeleton label="Loading consultants" /> : null}
         {consultants.data ? (
           <DataTable
             caption="Consultant directory"
@@ -105,6 +107,9 @@ export function IocPage() {
           </Note>
         ) : null}
         {budget.error ? <RetryableError message={budget.error} onRetry={budget.reload} /> : null}
+        {user?.permissions.viewBudget && budget.loading && !budget.data ? (
+          <SectionTableSkeleton label="Loading budget" />
+        ) : null}
         {budget.data ? (
           <>
             <Note>{budget.data.data.source.detail}</Note>
@@ -138,6 +143,7 @@ export function IocPage() {
       <Section id="milestones" title="Milestones">
         <Note>IOC desk shows milestones for King Salman Park Hills and Impact One operations.</Note>
         {milestones.error ? <RetryableError message={milestones.error} onRetry={milestones.reload} /> : null}
+        {milestones.loading && !milestones.data ? <SectionTableSkeleton label="Loading milestones" /> : null}
         {milestones.data ? (
           <DataTable
             caption="Milestones"
@@ -158,6 +164,8 @@ export function IocPage() {
           />
         ) : null}
       </Section>
+        </>
+      ) : null}
     </>
   );
 }

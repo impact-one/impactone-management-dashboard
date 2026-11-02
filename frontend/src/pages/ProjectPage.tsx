@@ -4,7 +4,8 @@ import { Breadcrumbs } from "../components/Breadcrumbs";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { EmptyState } from "../components/EmptyState";
-import { ErrorNote, Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { DetailSkeleton } from "../components/PageSkeleton";
 import { ReviewList, SourceBadge } from "../components/SourceBadge";
 import { MarkIcon } from "../components/marks";
 import { CardGrid, RecordCard, Section } from "../components/Surface";
@@ -30,7 +31,7 @@ export function ProjectPage() {
 
   return (
     <>
-      {loading && !detail ? <Loading label="Loading project" /> : null}
+      {loading && !detail ? <DetailSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {detail ? (
         <>

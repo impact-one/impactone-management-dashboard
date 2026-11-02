@@ -18,6 +18,7 @@ import { integrationsRouter } from "./modules/integrations/integrations.routes.j
 import { milestonesRouter } from "./modules/milestones/milestones.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
 import { proposalRouter } from "./modules/proposal/proposal.routes.js";
+import { slackRouter } from "./modules/slack/slack.routes.js";
 import { systemMapRouter } from "./modules/system-map/system-map.routes.js";
 import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 
@@ -53,6 +54,7 @@ export function createApp() {
   app.use("/api/ai-tools", aiToolsRouter);
   app.use("/api/automations", automationsRouter);
   app.use("/api/integrations", integrationsRouter);
+  app.use("/api/slack", slackRouter);
   app.use("/api/system-map", systemMapRouter);
   app.use("/api/audit", auditRouter);
   app.use("/api/proposal", proposalRouter);

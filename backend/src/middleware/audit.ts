@@ -4,14 +4,17 @@ import { recordAudit } from "../data/store.js";
 export function auditTrail(req: Request, res: Response, next: NextFunction) {
   res.on("finish", () => {
     if (!req.user) return;
-    if (req.originalUrl.startsWith("/api/health")) return;
+    const path = req.originalUrl.split("?")[0] ?? req.originalUrl;
+    if (path.startsWith("/api/health")) return;
+    // Soft Slack desk polls would flood the in-memory audit trail.
+    if (req.method === "GET" && (path === "/api/slack" || path === "/api/slack/desk")) return;
     recordAudit({
       actorEmail: req.user.email,
       role: req.user.role,
       method: req.method,
-      path: req.originalUrl.split("?")[0] ?? req.originalUrl,
+      path,
       status: res.statusCode,
-      action: `${req.method} ${req.originalUrl.split("?")[0] ?? req.originalUrl}`,
+      action: `${req.method} ${path}`,
     });
   });
   next();

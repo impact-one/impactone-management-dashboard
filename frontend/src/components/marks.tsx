@@ -11,19 +11,19 @@ import {
   LayersIcon,
   LayoutDashboardIcon,
   ListTodoIcon,
-  MessageSquareIcon,
   Share2Icon,
   SparklesIcon,
   TableIcon,
   UserRoundIcon,
   WorkflowIcon,
 } from "lucide-react";
+import { SlackIcon } from "./SlackIcon";
 
 function iconFor(name: string): ComponentType<{ className?: string }> {
   const key = name.toLowerCase();
   if (key.includes("calendar") || key.includes("meeting")) return CalendarDaysIcon;
   if (key.includes("drive")) return HardDriveIcon;
-  if (key.includes("slack")) return MessageSquareIcon;
+  if (key.includes("slack")) return SlackIcon;
   if (key.includes("sheet") || key.includes("budget")) return TableIcon;
   if (key.includes("make") || key.includes("workflow") || key.includes("automat")) return WorkflowIcon;
   if (key.includes("instagram")) return CameraIcon;

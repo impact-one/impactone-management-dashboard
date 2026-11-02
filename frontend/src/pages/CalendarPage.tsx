@@ -3,7 +3,8 @@ import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "../components/EmptyState";
-import { ErrorNote, Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { DeskSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { api } from "../lib/api";
@@ -62,7 +63,7 @@ export function CalendarPage() {
           </Button>
         ) : null}
       </PageHeader>
-      {loading && !data ? <Loading label="Loading agenda" /> : null}
+      {loading && !data ? <DeskSkeleton label="Loading agenda" /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
       {saved ? <Note>{saved}</Note> : null}

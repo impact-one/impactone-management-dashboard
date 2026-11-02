@@ -7,7 +7,8 @@ import { useAuth } from "../app/AuthContext";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
-import { ErrorNote, Loading, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { DeskSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { api } from "../lib/api";
@@ -66,7 +67,7 @@ export function DocumentsPage() {
           </div>
         ) : null}
       </PageHeader>
-      {loading && !data ? <Loading label="Loading documents" /> : null}
+      {loading && !data ? <DeskSkeleton label="Loading documents" rows={4} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {data?.meta.note ? <Note>{data.meta.note}</Note> : null}
       {saved ? <Note>{saved}</Note> : null}

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
-import { Loading, PageHeader, RetryableError } from "../components/PageHeader";
+import { PageHeader, RetryableError } from "../components/PageHeader";
+import { MapSkeleton } from "../components/PageSkeleton";
 import { ReviewList, SourceBadge, StepStateBadge } from "../components/SourceBadge";
 import { Section } from "../components/Surface";
 import { useApi } from "../lib/useApi";
@@ -21,7 +22,7 @@ export function SystemMapPage() {
         title="System map"
         lede="Tools, automations, and data sources the dashboard can reuse. A step is Documented only when the brief says so. Everything else is Needs review."
       />
-      {loading && !map ? <Loading label="Loading system map" /> : null}
+      {loading && !map ? <MapSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {map ? (
         <>

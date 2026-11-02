@@ -55,12 +55,13 @@ export function LoginPage() {
           </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground">
             Pilot desk for projects, deadlines, IOC consultants, and the tools already named in the brief. Google
-            Calendar schedules meetings. Drive keeps the library. Nothing is posted in Slack, ClickUp, Make, or Instagram.
+            Calendar schedules meetings. Drive keeps the library. Slack posts channel updates for staff. ClickUp stays
+            read-only. Nothing is posted in Make or Instagram.
           </p>
           <ul className="mt-8 grid list-none gap-3 p-0 text-sm text-foreground">
             {[
               "Role-based views for executive, manager, consultant, and viewer.",
-              "Sample data stays labelled until Calendar, ClickUp, or Drive access is connected.",
+              "Sample data stays labelled until Calendar, ClickUp, Drive, or Slack access is connected.",
               "Session cookie is httpOnly. The page never stores the token.",
             ].map((point) => (
               <li key={point} className="border-l-2 border-primary/40 pl-3 leading-6 text-muted-foreground">

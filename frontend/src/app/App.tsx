@@ -13,6 +13,7 @@ import { OverviewPage } from "../pages/OverviewPage";
 import { PilotPage } from "../pages/PilotPage";
 import { ProjectPage } from "../pages/ProjectPage";
 import { ProjectsPage } from "../pages/ProjectsPage";
+import { SlackPage } from "../pages/SlackPage";
 import { SystemMapPage } from "../pages/SystemMapPage";
 import { TasksPage } from "../pages/TasksPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,6 +36,7 @@ export function App() {
               <Route path="calendar" element={<CalendarPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="follow-ups" element={<FollowUpsPage />} />
+              <Route path="slack" element={<SlackPage />} />
               <Route path="ioc" element={<IocPage />} />
               <Route path="ai" element={<AiToolsPage />} />
               <Route path="map" element={<SystemMapPage />} />

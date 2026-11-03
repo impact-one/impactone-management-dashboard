@@ -19,13 +19,13 @@ One page for the Day 1 review. The same picture is in the app under System map. 
 
 1. Local pilot sign-in.
 2. API modules, one per area.
-3. ClickUp stays read-only. Google Calendar schedules meetings, invitations, availability, and sharing. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. Sample data until access exists. File contents stay in Drive.
+3. ClickUp stays read-only. Google Calendar schedules meetings, invitations, availability, and sharing. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. ChatGPT drafts, researches, analyzes, brainstorms, and summarizes a note the user submits. Sample or off until access exists. File contents stay in Drive.
 
 ## Tools already named
 
 Slack, Google Workspace, ClickUp, Otter.ai, ChatGPT, Claude, Cursor, Plaud, Make, Instagram, the HTML status dashboard, the IOC budget sheet, and LibreChat as a proposal only.
 
-ChatGPT, Claude, Cursor, and Plaud are licences on Kulde's tracker. Their workflows were not in the brief. Zygm's AI overview, in preparation since 26 October 2026, is the source for those rows. No agent was named, so the agent list is empty.
+ChatGPT is the assistant for drafts, research, analysis, brainstorming, and summaries. It runs from this desk when an OpenAI API key is set. Only the note a staff member submits is sent, and every output must be reviewed. Claude, Cursor, and Plaud remain licences on Kulde's tracker. Zygm's AI overview, in preparation since 26 October 2026, is still the source for those rows. No agent was named, so the agent list is empty.
 
 ## Data sources to reuse
 

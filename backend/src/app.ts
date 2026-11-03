@@ -5,6 +5,7 @@ import { env } from "./config/env.js";
 import { auditTrail } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { aiToolsRouter } from "./modules/ai-tools/ai-tools.routes.js";
+import { assistantRouter } from "./modules/assistant/assistant.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { automationsRouter } from "./modules/automations/automations.routes.js";
@@ -52,6 +53,7 @@ export function createApp() {
   app.use("/api/budgets", budgetsRouter);
   app.use("/api/calendar", calendarRouter);
   app.use("/api/ai-tools", aiToolsRouter);
+  app.use("/api/assistant", assistantRouter);
   app.use("/api/automations", automationsRouter);
   app.use("/api/integrations", integrationsRouter);
   app.use("/api/slack", slackRouter);

@@ -27,4 +27,6 @@ export const env = {
   googleCalendarId: process.env.GOOGLE_CALENDAR_ID?.trim() || "primary",
   slackBotToken: optional("SLACK_BOT_TOKEN"),
   slackChannelId: optional("SLACK_CHANNEL_ID"),
+  openaiApiKey: optional("OPENAI_API_KEY"),
+  openaiModel: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
 };

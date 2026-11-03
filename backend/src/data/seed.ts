@@ -774,15 +774,19 @@ export const aiTools: AiTool[] = [
     id: "ai-chatgpt",
     name: "ChatGPT",
     kind: "tool",
-    purpose: "Licence is on the tools tracker. The brief does not describe the workflows.",
+    purpose: "Draft, research, analyze, brainstorm, and summarize. Best fit is writing, analysis, and summaries.",
     owner: "Kulde (tracker)",
-    connections: "No confirmed connection to Slack, ClickUp, Drive, or this dashboard.",
+    connections:
+      "Assistant desk in this dashboard. Only the note a staff member types is sent to OpenAI. Budgets, documents, and tokens are not attached.",
     source: {
-      origin: "needs-review",
-      system: "IO Team Tools & Access Tracker",
-      detail: "Listed. Day-to-day use was not in the pilot brief.",
+      origin: "documented",
+      system: "Client requirement 01 / 09",
+      detail: "Live replies need an OpenAI API key. Review every output and keep confidential information out of the note.",
     },
-    reviewFlags: ["Purpose needs Zygm's overview. Not guessed here."],
+    reviewFlags: [
+      "Review every output before it is shared.",
+      "Do not paste tokens, passwords, fees, or live budget figures.",
+    ],
   },
   {
     id: "ai-claude",
@@ -972,11 +976,15 @@ export const catalogTools: CatalogTool[] = [
   {
     id: "tool-chatgpt",
     name: "ChatGPT",
-    area: "AI licence",
+    area: "AI assistant",
     owner: "Kulde",
-    purpose: "Listed licence. Workflow not documented in the brief.",
-    source: { origin: "needs-review", system: "Access tracker", detail: "Waiting on Zygm's overview." },
-    reviewFlags: ["Purpose needs review."],
+    purpose: "Draft, research, analyze, brainstorm, and summarize. Best fit: writing, analysis, and summaries.",
+    source: {
+      origin: "documented",
+      system: "Client requirement 01 / 09",
+      detail: "Assistant desk calls the OpenAI API when OPENAI_API_KEY is set. Review outputs. Do not send confidential information.",
+    },
+    reviewFlags: ["Review outputs before sharing.", "An OpenAI API key is required before replies are live."],
   },
   {
     id: "tool-claude",

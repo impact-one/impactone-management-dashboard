@@ -47,11 +47,13 @@ frontend/src/pages/
 docs/
 ```
 
-Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, slack, ai-tools, automations, integrations, system-map, audit, proposal.
+Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, slack, assistant, ai-tools, automations, integrations, system-map, audit, proposal.
+
+ChatGPT drafts, research, analysis, brainstorming, and summaries run from **Assistant** once `OPENAI_API_KEY` is set in `backend/.env`. See [ChatGPT setup](docs/CHATGPT-INTEGRATION.md).
 
 ## Data labels
 
-- **Live** — connected to ClickUp, Calendar, Drive, or Slack during this session.
+- **Live** — connected to ClickUp, Calendar, Drive, Slack, or ChatGPT during this session.
 - **Sample** — fictional or placeholder, safe to show without the real file.
 - **Documented** — stated in the pilot brief.
 - **Needs review** — unknown. Not guessed.
@@ -63,4 +65,5 @@ Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, co
 - [Access and security](docs/ACCESS-AND-SECURITY.md)
 - [System map](docs/SYSTEM-MAP.md)
 - [Slack setup](docs/SLACK-INTEGRATION.md)
+- [ChatGPT setup](docs/CHATGPT-INTEGRATION.md)
 - [Cost estimate](docs/COST-ESTIMATE.md)

@@ -8,6 +8,7 @@ import {
   ListTodoIcon,
   LogOutIcon,
   MessageSquareIcon,
+  BotIcon,
   NotebookPenIcon,
   PlugIcon,
   ScrollTextIcon,
@@ -131,6 +132,7 @@ export function AppShell() {
       id: "nav-intel",
       label: "Intelligence",
       items: [
+        { to: "/assistant", label: "Assistant", icon: BotIcon },
         { to: "/ai", label: "AI tools", icon: SparklesIcon },
         { to: "/map", label: "System map", icon: WaypointsIcon },
       ],
@@ -225,7 +227,7 @@ export function AppShell() {
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Preview environment with live Calendar, Drive, Slack, and read-only ClickUp where connected.
+              Preview environment with live Calendar, Drive, Slack, ChatGPT, and read-only ClickUp where connected.
             </TooltipContent>
           </Tooltip>
         </header>

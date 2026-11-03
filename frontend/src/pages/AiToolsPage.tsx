@@ -151,6 +151,9 @@ export function AiToolsPage() {
           </Section>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" size="sm" asChild>
+              <Link to="/assistant">Open ChatGPT assistant</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
               <Link to="/pilot#librechat">LibreChat evaluation</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>

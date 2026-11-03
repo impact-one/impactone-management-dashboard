@@ -333,10 +333,32 @@ export interface SlackDesk {
   messages: SlackMessage[];
 }
 
+export type AssistantWorkflow = "draft" | "research" | "analyze" | "brainstorm" | "summarize";
+
+export interface AssistantDesk {
+  connected: boolean;
+  canRun: boolean;
+  model: string | null;
+  provider: "ChatGPT";
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  workflows: { id: AssistantWorkflow; label: string; hint: string }[];
+  safeguards: string[];
+}
+
+export interface AssistantRun {
+  workflow: AssistantWorkflow;
+  model: string;
+  output: string;
+  reviewNote: string;
+  origin: "live";
+}
+
 export interface IntegrationStatus {
   id: string;
   name: string;
-  mode: "read-only" | "schedule" | "library" | "channel" | "not-connected";
+  mode: "read-only" | "schedule" | "library" | "channel" | "assistant" | "not-connected";
   configured: boolean;
   origin: Origin;
   detail: string;

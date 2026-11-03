@@ -3,6 +3,7 @@ import { calendarClient } from "../calendar/calendar.client.js";
 import type { LiveResult } from "./clients/readOnlyClient.js";
 import { clickUpClient } from "./clients/clickup.client.js";
 import { driveClient } from "../documents/drive.client.js";
+import { assistantClient } from "../assistant/assistant.client.js";
 import { slackClient } from "../slack/slack.client.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
@@ -166,19 +167,58 @@ function slackStatus(result: LiveResult<unknown>): IntegrationStatus {
   };
 }
 
+function assistantStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "chatgpt",
+      name: "ChatGPT",
+      mode: "assistant",
+      configured: false,
+      origin: "sample",
+      detail: "Drafts, research, analysis, brainstorming, and summaries stay off until an OpenAI API key is set.",
+      limitation: "Add OPENAI_API_KEY and restart the API. Review outputs. Do not paste confidential information.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "chatgpt",
+      name: "ChatGPT",
+      mode: "assistant",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "chatgpt",
+    name: "ChatGPT",
+    mode: "assistant",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Review every output. The desk does not store the note or the reply, and it does not attach other systems.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
 export class IntegrationsService {
   async list(): Promise<IntegrationStatus[]> {
-    const [clickup, calendar, drive, slack] = await Promise.all([
+    const [clickup, calendar, drive, slack, assistant] = await Promise.all([
       clickUpClient.get(),
       calendarClient.get(),
       driveClient.get(),
       slackClient.get(),
+      assistantClient.status(),
     ]);
     return [
       fromClient("clickup", "ClickUp", clickup),
       calendarStatus(calendar),
       driveStatus(drive),
       slackStatus(slack),
+      assistantStatus(assistant),
       absent(
         "sheets",
         "IOC budget Google Sheet",

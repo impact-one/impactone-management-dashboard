@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { AiToolsPage } from "../pages/AiToolsPage";
+import { AssistantPage } from "../pages/AssistantPage";
 import { AuditPage } from "../pages/AuditPage";
 import { CalendarPage } from "../pages/CalendarPage";
 import { DocumentsPage } from "../pages/DocumentsPage";
@@ -38,6 +39,7 @@ export function App() {
               <Route path="follow-ups" element={<FollowUpsPage />} />
               <Route path="slack" element={<SlackPage />} />
               <Route path="ioc" element={<IocPage />} />
+              <Route path="assistant" element={<AssistantPage />} />
               <Route path="ai" element={<AiToolsPage />} />
               <Route path="map" element={<SystemMapPage />} />
               <Route path="integrations" element={<IntegrationsPage />} />

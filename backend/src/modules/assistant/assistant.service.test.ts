@@ -1,0 +1,90 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { AppError } from "../../lib/AppError.js";
+import { permissionsFor } from "../../lib/permissions.js";
+import type { PublicUser, Role } from "../../types/domain.js";
+import { findConfidential } from "./assistant.guard.js";
+import { assistantService } from "./assistant.service.js";
+
+function user(role: Role): PublicUser {
+  return {
+    id: role,
+    email: `${role}@impactone.example`,
+    name: role,
+    role,
+    title: role,
+    assignedProjectIds: ["ksp-hills"],
+    permissions: permissionsFor(role),
+  };
+}
+
+function statusOf(error: unknown) {
+  assert.ok(error instanceof AppError);
+  return error.status;
+}
+
+describe("chatgpt assistant", () => {
+  it("blocks tokens and passwords before they can be sent", () => {
+    assert.match(findConfidential("use sk-testkey1234567890 please") ?? "", /API key/i);
+    assert.match(findConfidential("SLACK_BOT_TOKEN=xoxb-secret") ?? "", /secret|Slack/i);
+    assert.equal(findConfidential("Summarise the meeting notes from Tuesday."), null);
+  });
+
+  it("shows the desk to a viewer without a run button", async () => {
+    const result = await assistantService.desk(user("viewer"));
+    assert.equal(result.desk.canRun, false);
+    assert.equal(result.desk.provider, "ChatGPT");
+    assert.equal(result.desk.workflows.length, 5);
+    assert.match(result.note, /executive and manager/i);
+  });
+
+  it("refuses a consultant who tries to run a workflow", async () => {
+    await assert.rejects(
+      () =>
+        assistantService.run(user("consultant"), {
+          workflow: "summarize",
+          brief: "Summarise the workshop notes from Tuesday.",
+          acknowledged: true,
+        }),
+      (error) => statusOf(error) === 403,
+    );
+  });
+
+  it("rejects a note that contains a secret", async () => {
+    await assert.rejects(
+      () =>
+        assistantService.run(user("manager"), {
+          workflow: "draft",
+          brief: "Draft a note and include sk-testkey1234567890 in it.",
+          acknowledged: true,
+        }),
+      (error) => statusOf(error) === 400,
+    );
+  });
+
+  it("rejects a run that was not acknowledged", async () => {
+    await assert.rejects(
+      () =>
+        assistantService.run(user("manager"), {
+          workflow: "summarize",
+          brief: "Summarise the workshop notes from Tuesday.",
+          acknowledged: false,
+        }),
+      (error) => statusOf(error) === 400,
+    );
+  });
+
+  it("stays off until an OpenAI API key is set", async () => {
+    const desk = await assistantService.desk(user("manager"));
+    if (desk.desk.connected) return;
+    await assert.rejects(
+      () =>
+        assistantService.run(user("manager"), {
+          workflow: "summarize",
+          brief: "Summarise the workshop notes from Tuesday.",
+          acknowledged: true,
+        }),
+      (error) => statusOf(error) === 503,
+    );
+  });
+});

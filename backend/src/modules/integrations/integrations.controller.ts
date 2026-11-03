@@ -6,7 +6,7 @@ import { integrationsService } from "./integrations.service.js";
 export class IntegrationsController {
   list = asyncHandler(async (_req: Request, res: Response) => {
     sendData(res, await integrationsService.list(), {
-      note: "Integrations report live connection status. Write actions stay scoped to Calendar, Drive, and Slack where enabled.",
+      note: "Integrations report live connection status. Write actions stay scoped to Calendar, Drive, and Slack. ChatGPT runs only the note a staff member submits.",
     });
   });
 }

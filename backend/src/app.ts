@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env.js";
+import { mountWeb } from "./web.js";
 import { auditTrail } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { aiToolsRouter } from "./modules/ai-tools/ai-tools.routes.js";
@@ -28,7 +29,18 @@ import { tasksRouter } from "./modules/tasks/tasks.routes.js";
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
-  app.use(helmet());
+  app.use(
+    helmet({
+      // The host terminates HTTPS. HSTS and upgrade-insecure-requests here would
+      // force http://localhost (Docker) onto a certificate this process does not have.
+      strictTransportSecurity: false,
+      contentSecurityPolicy: {
+        directives: {
+          upgradeInsecureRequests: null,
+        },
+      },
+    }),
+  );
   app.use(
     cors({
       origin: env.corsOrigin,
@@ -68,6 +80,7 @@ export function createApp() {
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "Not found." });
   });
+  mountWeb(app, env.webRoot);
   app.use(errorHandler);
   return app;
 }

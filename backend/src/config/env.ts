@@ -32,4 +32,5 @@ export const env = {
   anthropicApiKey: optional("ANTHROPIC_API_KEY"),
   anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5-5",
   otterApiKey: optional("OTTER_API_KEY"),
+  webRoot: optional("WEB_ROOT"),
 };

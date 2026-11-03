@@ -21,6 +21,21 @@ npm test
 npm run typecheck
 ```
 
+## Docker
+
+One container serves the built web app and the API on port 4000. `backend/.env` is read at run time and is not copied into the image.
+
+```bash
+docker compose build
+docker compose up
+```
+
+Open http://localhost:4000. Sign-in needs HTTPS on a public host, because the session cookie is `Secure` and uses the `__Host-` prefix. `http://localhost` is treated as a secure origin, so the local container still accepts the cookie.
+
+On a host, set `JWT_SECRET` to a long random string and set `NODE_ENV=production`. Leave integration keys blank to keep sample data. Copy only the keys you already use in `backend/.env`. Do not commit that file.
+
+A free web service that builds this Dockerfile and gives you HTTPS is enough. Render is the shortest path: New Web Service, connect the repo, runtime Docker, free instance. Set the env vars in the dashboard, then open the `https://…onrender.com` URL. The free instance sleeps after about 15 minutes with no visits, and the in-memory audit log resets when the process starts again. Google Cloud Run is the other free container option if you already have a billing account; it scales to zero the same way.
+
 ## Demo sign-in
 
 Local accounts only. Not company SSO. The session is an httpOnly cookie, not a token in browser storage. Do not deploy this password.

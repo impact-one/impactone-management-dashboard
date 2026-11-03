@@ -6,6 +6,7 @@ const app = createApp();
 
 await initStore();
 
-app.listen(env.port, () => {
-  console.log(`API listening on http://localhost:${env.port}`);
+const host = "0.0.0.0";
+app.listen(env.port, host, () => {
+  console.log(`API listening on http://${host}:${env.port}`);
 });

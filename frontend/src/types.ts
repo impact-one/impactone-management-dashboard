@@ -376,6 +376,28 @@ export interface AssistantRun {
   origin: "live";
 }
 
+export type ClaudeWorkflow = "write" | "review" | "synthesize" | "code";
+
+export interface ClaudeDesk {
+  connected: boolean;
+  canRun: boolean;
+  model: string | null;
+  provider: "Claude";
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  workflows: { id: ClaudeWorkflow; label: string; hint: string }[];
+  safeguards: string[];
+}
+
+export interface ClaudeRun {
+  workflow: ClaudeWorkflow;
+  model: string;
+  output: string;
+  reviewNote: string;
+  origin: "live";
+}
+
 export interface SystemMap {
   tools: CatalogTool[];
   flows: AutomationFlow[];

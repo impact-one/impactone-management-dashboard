@@ -13,7 +13,7 @@ const SECRET_PATTERNS: { pattern: RegExp; message: string }[] = [
     message: "This text looks like an access token. Remove it before sending.",
   },
   {
-    pattern: /\b(OPENAI_API_KEY|SLACK_BOT_TOKEN|CLICKUP_API_TOKEN|GOOGLE_ACCESS_TOKEN|JWT_SECRET)\s*=\s*\S+/,
+    pattern: /\b(OPENAI_API_KEY|ANTHROPIC_API_KEY|SLACK_BOT_TOKEN|CLICKUP_API_TOKEN|GOOGLE_ACCESS_TOKEN|JWT_SECRET)\s*=\s*\S+/,
     message: "This text looks like an environment secret. Remove it before sending.",
   },
 ];

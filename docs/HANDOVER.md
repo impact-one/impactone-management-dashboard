@@ -27,7 +27,8 @@ For Mikolaj's end-of-pilot review. This is a working prototype, not a production
 | IOC budget | Fictional SAR figures. The finance sheet is not connected |
 | King Salman Park Hills dates and consultant fees | Placeholders. Not Saray's plan |
 | ChatGPT assistant | Built for drafts, research, analysis, brainstorming, and summaries. Live replies wait on `OPENAI_API_KEY`. Review outputs and do not paste confidential information |
-| AI purposes for Claude, Cursor, Plaud | Needs review. Zygm's overview was in preparation from 26 October 2026 |
+| Claude | Built for long-form writing, document review, synthesis, and coding notes. Live replies wait on `ANTHROPIC_API_KEY`. Validate important facts |
+| AI purposes for Cursor, Plaud | Needs review. Zygm's overview was in preparation from 26 October 2026 |
 | Agents | None named. The list is empty on purpose |
 | Otter → ClickUp | Not drawn as a live automation |
 | HTML master dashboard | Described, not embedded. URL was not provided |
@@ -74,3 +75,9 @@ Short setup note: [Slack setup](SLACK-INTEGRATION.md).
 From the Assistant screen, executive and manager roles can draft, research, analyze, brainstorm, or summarize a note they type. Review the reply before sharing it. Do not paste tokens, fees, or live budget figures. The desk does not store the note or the reply, and it does not attach other systems. Live replies wait on `OPENAI_API_KEY`.
 
 Short setup note: [ChatGPT setup](CHATGPT-INTEGRATION.md).
+
+## Claude
+
+From the Claude screen, executive and manager roles can write from a source, review a document, synthesize it, or work through a coding note. Validate important facts before sharing the reply. Do not paste tokens, fees, or live budget figures. The desk does not store the source or the reply, and it does not attach Drive files. Live replies wait on `ANTHROPIC_API_KEY`.
+
+Short setup note: [Claude setup](CLAUDE-INTEGRATION.md).

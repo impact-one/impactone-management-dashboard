@@ -13,6 +13,7 @@ The prototype runs on a laptop. No new subscription is required to demo it. Live
 | Host the API and web app | About USD 20–40 per month | One small container on an Impact account |
 | LibreChat, only if chosen later | About USD 20–50 per month plus model usage | Model usage can exceed hosting and is not predictable yet |
 | ChatGPT assistant | OpenAI usage on an Impact account | Off until `OPENAI_API_KEY` is set. Writing, analysis, and summaries only |
+| Claude | Anthropic usage on an Impact account | Off until `ANTHROPIC_API_KEY` is set. Long-form writing and document review |
 | ClickUp read, Calendar scheduling, and the Drive library | A few days after tokens exist | Adapters are already in the API |
 | Company sign-in and a stored audit log | About one week | Replaces demo passwords |
 | Budget connection | Blocked on finance | Snapshot or read-only sheet. No estimate until the shape of access is known |

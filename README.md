@@ -51,9 +51,11 @@ Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, co
 
 ChatGPT drafts, research, analysis, brainstorming, and summaries run from **Assistant** once `OPENAI_API_KEY` is set in `backend/.env`. See [ChatGPT setup](docs/CHATGPT-INTEGRATION.md).
 
+Claude writes, reviews, and synthesizes a long document from **Claude** once `ANTHROPIC_API_KEY` is set. See [Claude setup](docs/CLAUDE-INTEGRATION.md).
+
 ## Data labels
 
-- **Live** — connected to ClickUp, Calendar, Drive, Slack, or ChatGPT during this session.
+- **Live** — connected to ClickUp, Calendar, Drive, Slack, ChatGPT, or Claude during this session.
 - **Sample** — fictional or placeholder, safe to show without the real file.
 - **Documented** — stated in the pilot brief.
 - **Needs review** — unknown. Not guessed.
@@ -66,4 +68,5 @@ ChatGPT drafts, research, analysis, brainstorming, and summaries run from **Assi
 - [System map](docs/SYSTEM-MAP.md)
 - [Slack setup](docs/SLACK-INTEGRATION.md)
 - [ChatGPT setup](docs/CHATGPT-INTEGRATION.md)
+- [Claude setup](docs/CLAUDE-INTEGRATION.md)
 - [Cost estimate](docs/COST-ESTIMATE.md)

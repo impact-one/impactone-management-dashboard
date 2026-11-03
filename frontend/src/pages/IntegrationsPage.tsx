@@ -60,7 +60,7 @@ export function IntegrationsPage() {
       <PageHeader
         eyebrow="Control"
         title="Integrations"
-        lede="Connection status for Calendar, Drive, Slack, ChatGPT, ClickUp, and related systems."
+        lede="Connection status for Calendar, Drive, Slack, ChatGPT, Claude, ClickUp, and related systems."
       />
       {loading && !data ? <TablePageSkeleton label="Checking integrations" columns={7} filters={3} /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}

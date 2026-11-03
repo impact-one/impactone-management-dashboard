@@ -6,6 +6,7 @@ import { auditTrail } from "./middleware/audit.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { aiToolsRouter } from "./modules/ai-tools/ai-tools.routes.js";
 import { assistantRouter } from "./modules/assistant/assistant.routes.js";
+import { claudeRouter } from "./modules/claude/claude.routes.js";
 import { auditRouter } from "./modules/audit/audit.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { automationsRouter } from "./modules/automations/automations.routes.js";
@@ -35,7 +36,7 @@ export function createApp() {
       allowedHeaders: ["Content-Type", "Authorization"],
     }),
   );
-  app.use(express.json({ limit: "32kb" }));
+  app.use(express.json({ limit: "256kb" }));
   app.use(auditTrail);
 
   app.get("/api/health", (_req, res) => {
@@ -54,6 +55,7 @@ export function createApp() {
   app.use("/api/calendar", calendarRouter);
   app.use("/api/ai-tools", aiToolsRouter);
   app.use("/api/assistant", assistantRouter);
+  app.use("/api/claude", claudeRouter);
   app.use("/api/automations", automationsRouter);
   app.use("/api/integrations", integrationsRouter);
   app.use("/api/slack", slackRouter);

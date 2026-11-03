@@ -154,6 +154,9 @@ export function AiToolsPage() {
               <Link to="/assistant">Open ChatGPT assistant</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
+              <Link to="/claude">Open Claude</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
               <Link to="/pilot#librechat">LibreChat evaluation</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>

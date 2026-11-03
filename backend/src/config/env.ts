@@ -29,4 +29,6 @@ export const env = {
   slackChannelId: optional("SLACK_CHANNEL_ID"),
   openaiApiKey: optional("OPENAI_API_KEY"),
   openaiModel: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
+  anthropicApiKey: optional("ANTHROPIC_API_KEY"),
+  anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5-5",
 };

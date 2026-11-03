@@ -792,15 +792,19 @@ export const aiTools: AiTool[] = [
     id: "ai-claude",
     name: "Claude",
     kind: "tool",
-    purpose: "Licence is on the tools tracker. The brief does not describe the workflows.",
+    purpose: "Work with long documents, synthesize context, write, and support coding notes. Best fit is long-form writing and document review.",
     owner: "Kulde (tracker)",
-    connections: "No confirmed connection to other systems.",
+    connections:
+      "Claude desk in this dashboard. Only the source a staff member pastes is sent to Anthropic. Drive files, budgets, and tokens are not attached.",
     source: {
-      origin: "needs-review",
-      system: "IO Team Tools & Access Tracker",
-      detail: "Listed. Use was not documented in the brief.",
+      origin: "documented",
+      system: "Client requirement 02 / 09",
+      detail: "Live replies need an Anthropic API key. Validate important facts and generated outputs.",
     },
-    reviewFlags: ["Purpose needs Zygm's overview."],
+    reviewFlags: [
+      "Validate important facts before a reply is shared.",
+      "Do not paste tokens, passwords, fees, or live budget figures.",
+    ],
   },
   {
     id: "ai-cursor",
@@ -989,11 +993,15 @@ export const catalogTools: CatalogTool[] = [
   {
     id: "tool-claude",
     name: "Claude",
-    area: "AI licence",
+    area: "Document reasoning",
     owner: "Kulde",
-    purpose: "Listed licence. Workflow not documented in the brief.",
-    source: { origin: "needs-review", system: "Access tracker", detail: "Waiting on Zygm's overview." },
-    reviewFlags: ["Purpose needs review."],
+    purpose: "Long documents, synthesis, writing, and coding notes. Best fit: long-form writing and document review.",
+    source: {
+      origin: "documented",
+      system: "Client requirement 02 / 09",
+      detail: "Claude desk calls the Anthropic API when ANTHROPIC_API_KEY is set. Validate important facts.",
+    },
+    reviewFlags: ["Validate generated outputs before sharing.", "An Anthropic API key is required before replies are live."],
   },
   {
     id: "tool-cursor",

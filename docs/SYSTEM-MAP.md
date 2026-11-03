@@ -25,7 +25,7 @@ One page for the Day 1 review. The same picture is in the app under System map. 
 
 Slack, Google Workspace, ClickUp, Otter.ai, ChatGPT, Claude, Cursor, Plaud, Make, Instagram, the HTML status dashboard, the IOC budget sheet, and LibreChat as a proposal only.
 
-ChatGPT is the assistant for drafts, research, analysis, brainstorming, and summaries. It runs from this desk when an OpenAI API key is set. Only the note a staff member submits is sent, and every output must be reviewed. Claude, Cursor, and Plaud remain licences on Kulde's tracker. Zygm's AI overview, in preparation since 26 October 2026, is still the source for those rows. No agent was named, so the agent list is empty.
+ChatGPT is the assistant for drafts, research, analysis, brainstorming, and summaries. It runs from this desk when an OpenAI API key is set. Claude works from a long document: writing, review, synthesis, and coding notes. It runs when an Anthropic API key is set. Only the text a staff member submits is sent, and important facts must be checked. Cursor and Plaud remain licences on Kulde's tracker. No agent was named, so the agent list is empty.
 
 ## Data sources to reuse
 

@@ -3,6 +3,7 @@ import { calendarClient } from "../calendar/calendar.client.js";
 import type { LiveResult } from "./clients/readOnlyClient.js";
 import { clickUpClient } from "./clients/clickup.client.js";
 import { driveClient } from "../documents/drive.client.js";
+import { otterClient } from "../otter/otter.client.js";
 import { slackClient } from "../slack/slack.client.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
@@ -116,6 +117,43 @@ function driveStatus(result: LiveResult<unknown>): IntegrationStatus {
   };
 }
 
+function otterStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "otter",
+      name: "Otter.ai",
+      mode: "meetings",
+      configured: false,
+      origin: "sample",
+      detail: "Transcripts, summaries, and action items run on labelled sample notes.",
+      limitation: "Set OTTER_API_KEY from an Enterprise workspace. Confirm consent and sharing before opening notes.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "otter",
+      name: "Otter.ai",
+      mode: "meetings",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "otter",
+    name: "Otter.ai",
+    mode: "meetings",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Read only. This desk does not change transcript sharing or send action items to ClickUp.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
 function absent(id: string, name: string, detail: string, limitation: string, origin: Origin = "documented"): IntegrationStatus {
   return {
     id,
@@ -168,17 +206,19 @@ function slackStatus(result: LiveResult<unknown>): IntegrationStatus {
 
 export class IntegrationsService {
   async list(): Promise<IntegrationStatus[]> {
-    const [clickup, calendar, drive, slack] = await Promise.all([
+    const [clickup, calendar, drive, slack, otter] = await Promise.all([
       clickUpClient.get(),
       calendarClient.get(),
       driveClient.get(),
       slackClient.get(),
+      otterClient.get(),
     ]);
     return [
       fromClient("clickup", "ClickUp", clickup),
       calendarStatus(calendar),
       driveStatus(drive),
       slackStatus(slack),
+      otterStatus(otter),
       absent(
         "sheets",
         "IOC budget Google Sheet",

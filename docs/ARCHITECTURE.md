@@ -1,6 +1,6 @@
 # Architecture
 
-Browser (React, Vite) → JSON API (Express). The browser never holds ClickUp, Google, or Slack tokens. Tokens, if Kulde adds them later, stay in the API environment on an Impact account.
+Browser (React, Vite) → JSON API (Express). The browser never holds ClickUp, Google, Slack, or Otter tokens. Tokens, if Kulde adds them later, stay in the API environment on an Impact account.
 
 ## Modules
 
@@ -19,6 +19,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | budgets | `GET /api/budgets` | Staff only. Fictional figures |
 | calendar | `GET /api/calendar`, `GET /api/calendar/desk`, `POST /api/calendar/meetings`, invitations, availability, sharing | Schedule, invite, free/busy, and sharing for staff. Sample workspace until a token is set |
 | slack | `GET /api/slack`, `GET /api/slack/desk`, `POST /api/slack/messages` | Read recent channel messages and post a daily update for staff. Sample until bot token and channel id are set |
+| otter | `GET /api/otter/desk` | Transcripts, summaries, and action items for staff. Sample until an Enterprise API key is set. Notes stay closed until consent and sharing are confirmed |
 | ai-tools | `GET /api/ai-tools` | Catalogue and empty agent list |
 | automations | `GET /api/automations` | Known flows |
 | integrations | `GET /api/integrations` | Adapter status and limits |
@@ -26,7 +27,7 @@ Each area under `backend/src/modules` has a route, a controller, and a service.
 | audit | `GET /api/audit` | Staff only |
 | proposal | `GET /api/proposal` | Access model, LibreChat, cost, assumptions |
 
-CORS allows GET and POST. POST is sign-in, Google Calendar scheduling, the Drive library, and Slack channel posts. ClickUp still sends GET only. Drive does not download file bytes.
+CORS allows GET and POST. POST is sign-in, Google Calendar scheduling, the Drive library, and Slack channel posts. ClickUp and Otter send GET only. Drive does not download file bytes. Otter audio is not downloaded.
 
 ## When a token is missing
 
@@ -34,4 +35,4 @@ The service keeps the labelled sample and says so. The screen does not go blank,
 
 ## What this does not include
 
-Company SSO, a database, LibreChat, a Make client, a Sheets client, and writes to ClickUp or Instagram. Calendar scheduling, the Drive library, and Slack channel posts are the live writes. File contents stay in Drive. Slack edit/delete and multi-channel admin stay out of scope.
+Company SSO, a database, LibreChat, a Make client, a Sheets client, writes to ClickUp or Instagram, and writes to Otter. Calendar scheduling, the Drive library, and Slack channel posts are the live writes. File contents stay in Drive. Otter sharing stays in Otter. Slack edit/delete and multi-channel admin stay out of scope.

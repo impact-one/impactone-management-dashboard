@@ -27,4 +27,5 @@ export const env = {
   googleCalendarId: process.env.GOOGLE_CALENDAR_ID?.trim() || "primary",
   slackBotToken: optional("SLACK_BOT_TOKEN"),
   slackChannelId: optional("SLACK_CHANNEL_ID"),
+  otterApiKey: optional("OTTER_API_KEY"),
 };

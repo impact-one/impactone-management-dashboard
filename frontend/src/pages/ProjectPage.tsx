@@ -1,299 +1,250 @@
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { ArrowUpRightIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import { DataTable } from "../components/DataTable";
-import { Due } from "../components/Due";
-import { EmptyState } from "../components/EmptyState";
-import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { ErrorNote, RetryableError } from "../components/PageHeader";
 import { DetailSkeleton } from "../components/PageSkeleton";
-import { ReviewList, SourceBadge } from "../components/SourceBadge";
-import { MarkIcon } from "../components/marks";
-import { FileTextIcon, FlagIcon, ListTodoIcon, UsersIcon, LayersIcon } from "lucide-react";
-import {
-  ChartPanel,
-  ChartRow,
-  SoftBarChart,
-  SoftDonutChart,
-  SoftProgressTracks,
-  countBy,
-} from "../components/charts";
-import { CardGrid, MetricStrip, RecordCard, Section } from "../components/Surface";
-import { formatMoney, plainStatus } from "../lib/format";
+import { formatDate, formatMoney } from "../lib/format";
+import { useTitle } from "../lib/useTitle";
 import { useApi } from "../lib/useApi";
 import type { Envelope, ProjectDetail, Task } from "../types";
+
+function words(value: string) {
+  return value.replaceAll("-", " ");
+}
+
+function when(value: string | null) {
+  return value ? formatDate(value) : "—";
+}
+
+function fee(amount: number | null, currency: string) {
+  return amount === null ? "—" : formatMoney(amount, currency);
+}
 
 function taskTitle(row: Task) {
   if (!row.href) return row.title;
   return (
-    <a href={row.href} target="_blank" rel="noreferrer" className="font-medium underline-offset-4 hover:underline">
+    <a href={row.href} target="_blank" rel="noreferrer" className="underline-offset-4 hover:underline">
       {row.title}
     </a>
   );
+}
+
+function Status({ value }: { value: string }) {
+  const key = value.toLowerCase();
+  const dot = key.includes("review")
+    ? "bg-[var(--origin-review-dot)]"
+    : key === "active" || key === "done"
+      ? "bg-[var(--brand-leaf)]"
+      : key.includes("progress")
+        ? "bg-[var(--brand-cyan)]"
+        : "bg-muted-foreground/40";
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
+      <span className={cn("size-1.5 shrink-0 rounded-full", dot)} aria-hidden="true" />
+      {words(value)}
+    </span>
+  );
+}
+
+function Group({
+  title,
+  count,
+  children,
+  className,
+}: {
+  title: string;
+  count: number;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("surface h-full rounded-2xl bg-card px-4 py-3.5", className)}>
+      <h2 className="flex items-baseline gap-2 text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        {title}
+        <span className="tracking-normal tabular-nums">{count}</span>
+      </h2>
+      <div className="mt-1">{children}</div>
+    </section>
+  );
+}
+
+function Item({
+  title,
+  label,
+  detail,
+  aside,
+}: {
+  title: ReactNode;
+  label: string;
+  detail?: string;
+  aside?: ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-6 border-b border-border/60 py-1.5 last:border-0">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground" title={label}>
+          {title}
+        </p>
+        {detail ? <p className="mt-0.5 truncate text-xs text-muted-foreground capitalize">{detail}</p> : null}
+      </div>
+      {aside ? <div className="shrink-0 text-xs text-muted-foreground tabular-nums">{aside}</div> : null}
+    </div>
+  );
+}
+
+function Quiet({ children }: { children: string }) {
+  return <p className="border-b border-border/60 py-2 text-sm text-muted-foreground">{children}</p>;
 }
 
 export function ProjectPage() {
   const { id } = useParams();
   const { data, error, loading, reload } = useApi<Envelope<ProjectDetail>>(id ? `/projects/${id}` : null);
   const detail = data?.data;
+  useTitle(detail?.project.name ?? "Project");
 
   if (!id) return <ErrorNote message="Project not found." />;
+
+  const tasks = detail ? [...detail.tasks, ...detail.teamLiveTasks] : [];
+  const documents = detail ? [...detail.documents, ...detail.teamLiveDocuments] : [];
 
   return (
     <>
       {loading && !detail ? <DetailSkeleton /> : null}
       {error ? <RetryableError message={error} onRetry={reload} /> : null}
       {detail ? (
-        <>
+        <div>
           <Breadcrumbs
+            className="mb-3"
             items={[
               { label: "Projects", to: "/projects" },
               { label: detail.project.name },
             ]}
           />
-          <PageHeader eyebrow={detail.project.organisation} title={detail.project.name} lede={detail.project.summary}>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <SourceBadge origin={detail.project.source.origin} />
-              <span className="capitalize text-muted-foreground">{plainStatus(detail.project.status)}</span>
-              <span className="text-muted-foreground">· {detail.project.owner}</span>
+          <header className="flex items-start justify-between gap-8 border-b border-border/80 pb-5">
+            <div className="min-w-0 max-w-2xl">
+              <h1 className="text-[1.75rem] font-semibold tracking-tight text-foreground">{detail.project.name}</h1>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+                <span>{detail.project.organisation}</span>
+                <span aria-hidden="true">·</span>
+                <span>{detail.project.owner}</span>
+                <span aria-hidden="true">·</span>
+                <Status value={detail.project.status} />
+              </p>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{detail.project.summary}</p>
             </div>
-          </PageHeader>
-          <p className="mb-3 text-sm text-muted-foreground">{detail.project.source.detail}</p>
-          <ReviewList flags={detail.project.reviewFlags} />
-          {detail.taskNote || detail.documentNote ? (
-            <div className="mb-6">
-              <Note>
-                {detail.taskNote} {detail.documentNote}
-              </Note>
-            </div>
-          ) : null}
+            <Link
+              to="/tasks"
+              className="inline-flex shrink-0 items-center gap-1 pt-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              All tasks
+              <ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
+            </Link>
+          </header>
 
-          <div className="mb-6 space-y-6">
-            <MetricStrip
-              items={[
-                { label: "Workstreams", value: detail.project.workstreams.length, icon: <LayersIcon /> },
-                { label: "Tasks", value: detail.tasks.length, icon: <ListTodoIcon /> },
-                { label: "Documents", value: detail.documents.length, icon: <FileTextIcon /> },
-                { label: "Follow-ups", value: detail.followUps.length, icon: <FlagIcon /> },
-                { label: "Consultants", value: detail.consultants.length, icon: <UsersIcon /> },
-              ]}
-            />
-            <ChartRow>
-              <ChartPanel title="Task status" className="lg:col-span-5">
-                <SoftBarChart
-                  data={countBy(detail.tasks, (row) => plainStatus(row.status))}
-                  layout="horizontal"
-                  compact
-                />
-              </ChartPanel>
-              <ChartPanel title="Task sources" className="lg:col-span-3">
-                <SoftDonutChart
-                  data={countBy(detail.tasks, (row) => {
-                    if (row.source.origin === "live") return "Live";
-                    if (row.source.origin === "sample") return "Sample";
-                    if (row.source.origin === "documented") return "Documented";
-                    return "Needs review";
-                  })}
-                  centerLabel="Tasks"
-                  compact
-                />
-              </ChartPanel>
-              <ChartPanel title="Workstream load" className="lg:col-span-4">
-                <SoftProgressTracks
-                  data={detail.project.workstreams.map((item) => ({
-                    name: item.name,
-                    value: detail.tasks.filter((task) => task.title.toLowerCase().includes(item.name.split(" ")[0]?.toLowerCase() ?? "")).length || 1,
-                  }))}
-                />
-              </ChartPanel>
-            </ChartRow>
-          </div>
-
-          <Section title="Workstreams">
-            {detail.project.workstreams.length === 0 ? (
-              <EmptyState title="No workstreams listed" description="Workstreams for this project will appear here once they are added." />
-            ) : (
-              <CardGrid>
-                {detail.project.workstreams.map((item) => (
-                  <li key={item.id}>
-                    <RecordCard
-                      kicker="Workstream"
-                      title={item.name}
-                      mark={<MarkIcon name={item.name} />}
-                      fields={[
-                        { label: "Owner", value: item.owner },
-                        { label: "Status", value: <span className="capitalize">{plainStatus(item.status)}</span> },
-                      ]}
-                    />
-                  </li>
-                ))}
-              </CardGrid>
-            )}
-          </Section>
-
-          <Section title="Tasks on this project">
-            <DataTable
-              caption={`Tasks for ${detail.project.name}`}
-              rows={detail.tasks}
-              empty="No project-scoped tasks yet."
-              columns={[
-                { key: "title", header: "Task", render: (row) => taskTitle(row) },
-                { key: "owner", header: "Owner", render: (row) => row.owner },
-                {
-                  key: "responsibility",
-                  header: "Responsibility",
-                  render: (row) => <span className="text-muted-foreground">{row.responsibility || "—"}</span>,
-                },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
-                },
-                { key: "due", header: "Due", render: (row) => <Due value={row.dueDate} /> },
-                { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-              ]}
-            />
-            <Button variant="link" className="mt-2 h-auto px-0" asChild>
-              <Link to="/tasks">Open full task list</Link>
-            </Button>
-          </Section>
-
-          {detail.teamLiveTasks.length > 0 ? (
-            <Section title="Team-wide live tasks">
-              <Note>These live tasks are team-wide and not mapped to this project yet.</Note>
-              <DataTable
-                caption="Team-wide live tasks"
-                rows={detail.teamLiveTasks}
-                columns={[
-                  { key: "title", header: "Task", render: (row) => taskTitle(row) },
-                  { key: "owner", header: "Owner", render: (row) => row.owner },
-                  { key: "due", header: "Due", render: (row) => <Due value={row.dueDate} /> },
-                  { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-                ]}
-              />
-            </Section>
-          ) : null}
-
-          <Section title="Documents">
-            {detail.documents.length === 0 ? (
-              <EmptyState title="No project documents" description="Known documents for this project will appear here." />
-            ) : (
-              <CardGrid>
-                {detail.documents.map((item) => (
-                  <li key={item.id}>
-                    <RecordCard
-                      kicker={item.owner}
+          <div className="mt-5 grid items-start gap-4 lg:grid-cols-6">
+              <Group className="lg:col-span-4" title="Documents" count={documents.length}>
+                {documents.length === 0 ? (
+                  <Quiet>No project documents.</Quiet>
+                ) : (
+                  documents.map((item) => (
+                    <Item
+                      key={item.id}
+                      label={item.title}
                       title={
                         item.href ? (
-                          <a
-                            href={item.href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline-offset-4 hover:underline"
-                          >
+                          <a href={item.href} target="_blank" rel="noreferrer" className="underline-offset-4 hover:underline">
                             {item.title}
                           </a>
                         ) : (
                           item.title
                         )
                       }
-                      origin={item.source.origin}
-                      summary={item.source.detail}
-                      mark={<MarkIcon name={`${item.title} document`} />}
-                      flags={item.reviewFlags}
+                      detail={item.projectId ? item.owner : `${item.owner} · team-wide`}
                     />
-                  </li>
-                ))}
-              </CardGrid>
-            )}
-          </Section>
+                  ))
+                )}
+              </Group>
 
-          {detail.teamLiveDocuments.length > 0 ? (
-            <Section title="Team-wide live Drive files">
-              <Note>These Drive files are team-wide and not mapped to this project.</Note>
-              <DataTable
-                caption="Team-wide Drive files"
-                rows={detail.teamLiveDocuments}
-                columns={[
-                  {
-                    key: "title",
-                    header: "File",
-                    render: (row) =>
-                      row.href ? (
-                        <a href={row.href} target="_blank" rel="noreferrer" className="underline-offset-4 hover:underline">
-                          {row.title}
-                        </a>
-                      ) : (
-                        row.title
-                      ),
-                  },
-                  { key: "owner", header: "Owner", render: (row) => row.owner },
-                  { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-                ]}
-              />
-            </Section>
-          ) : null}
+              <div className="grid content-start gap-4 lg:col-span-2">
+                <Group title="Tasks" count={tasks.length}>
+                  {tasks.length === 0 ? (
+                    <Quiet>No tasks on this project.</Quiet>
+                  ) : (
+                    tasks.map((row) => (
+                      <Item
+                        key={row.id}
+                        label={row.title}
+                        title={taskTitle(row)}
+                        detail={row.projectId ? row.owner : `${row.owner} · team-wide`}
+                        aside={when(row.dueDate)}
+                      />
+                    ))
+                  )}
+                </Group>
+                <Group title="Follow-ups" count={detail.followUps.length}>
+                  {detail.followUps.length === 0 ? (
+                    <Quiet>No open follow-ups.</Quiet>
+                  ) : (
+                    detail.followUps.map((row) => (
+                      <Item key={row.id} label={row.title} title={row.title} detail={row.owner} aside={when(row.dueDate)} />
+                    ))
+                  )}
+                </Group>
+              </div>
 
-          <Section title="Follow-ups">
-            <DataTable
-              caption={`Follow-ups for ${detail.project.name}`}
-              rows={detail.followUps}
-              empty="No open follow-ups on this project."
-              columns={[
-                { key: "title", header: "Follow-up", render: (row) => row.title },
-                { key: "owner", header: "Owner", render: (row) => row.owner },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
-                },
-                { key: "due", header: "Due", render: (row) => <Due value={row.dueDate} /> },
-                { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-              ]}
-            />
-          </Section>
+              <div className="grid items-stretch gap-4 lg:col-span-6 lg:grid-cols-3">
+              <Group title="Workstreams" count={detail.project.workstreams.length}>
+                {detail.project.workstreams.length === 0 ? (
+                  <Quiet>No workstreams listed.</Quiet>
+                ) : (
+                  detail.project.workstreams.map((item) => (
+                    <Item
+                      key={item.id}
+                      label={item.name}
+                      title={item.name}
+                      detail={item.owner}
+                      aside={<Status value={item.status} />}
+                    />
+                  ))
+                )}
+              </Group>
 
-          <Section title="Milestones">
-            <DataTable
-              caption={`Milestones for ${detail.project.name}`}
-              rows={detail.milestones}
-              empty="No milestones listed for this project."
-              columns={[
-                { key: "title", header: "Milestone", render: (row) => row.title },
-                { key: "owner", header: "Owner", render: (row) => row.owner },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
-                },
-                { key: "due", header: "Target", render: (row) => <Due value={row.targetDate} /> },
-                { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-              ]}
-            />
-          </Section>
+              <Group title="Milestones" count={detail.milestones.length}>
+                {detail.milestones.length === 0 ? (
+                  <Quiet>No milestones listed.</Quiet>
+                ) : (
+                  detail.milestones.map((row) => (
+                    <Item
+                      key={row.id}
+                      label={row.title}
+                      title={row.title}
+                      detail={row.owner}
+                      aside={<Status value={row.status} />}
+                    />
+                  ))
+                )}
+              </Group>
 
-          <Section title="Consultants">
-            <DataTable
-              caption={`Consultants for ${detail.project.name}`}
-              rows={detail.consultants}
-              empty="No consultants assigned to this project."
-              columns={[
-                { key: "role", header: "Role", render: (row) => row.role },
-                { key: "scope", header: "Scope", render: (row) => row.scope },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
-                },
-                {
-                  key: "fee",
-                  header: "Fee",
-                  render: (row) => formatMoney(row.feeAmount, row.currency),
-                },
-                { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },
-              ]}
-            />
-          </Section>
-        </>
+              <Group title="Consultants" count={detail.consultants.length}>
+                {detail.consultants.length === 0 ? (
+                  <Quiet>No consultants assigned.</Quiet>
+                ) : (
+                  detail.consultants.map((row) => (
+                    <Item
+                      key={row.id}
+                      label={row.role}
+                      title={row.role}
+                      detail={words(row.status)}
+                      aside={fee(row.feeAmount, row.currency)}
+                    />
+                  ))
+                )}
+              </Group>
+              </div>
+          </div>
+        </div>
       ) : null}
     </>
   );

@@ -1,15 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { RefreshCwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HashIcon, MessageSquareIcon, RadioIcon, UsersIcon, SendIcon } from "lucide-react";
-import {
-  ChartPanel,
-  ChartRow,
-  SoftBarChart,
-  SoftDonutChart,
-  SoftProgressTracks,
-  countBy,
-} from "../components/charts";
+import { HashIcon, MessageSquareIcon, RadioIcon, UsersIcon } from "lucide-react";
 import { DataTable } from "../components/DataTable";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { SlackSkeleton } from "../components/PageSkeleton";
@@ -149,11 +141,7 @@ export function SlackPage() {
     }
   }
 
-  const authorMix = useMemo(
-    () =>
-      countBy(desk?.messages ?? [], (item) => displayAuthor(item.author || "Unknown")).slice(0, 8),
-    [desk?.messages],
-  );
+  const authorCount = new Set((desk?.messages ?? []).map((item) => displayAuthor(item.author || "Unknown"))).size;
 
   return (
     <>
@@ -184,18 +172,12 @@ export function SlackPage() {
           <MetricStrip
             items={[
               { label: "Messages", value: desk.messages.length, icon: <MessageSquareIcon /> },
-              { label: "Authors", value: authorMix.length, icon: <UsersIcon /> },
+              { label: "Authors", value: authorCount, icon: <UsersIcon /> },
               {
                 label: "Connected",
                 value: desk.connected ? "Live" : "Off",
                 icon: <RadioIcon />,
                 tone: desk.connected ? "good" : "muted",
-              },
-              {
-                label: "Can post",
-                value: desk.canPost ? "Yes" : "No",
-                icon: <SendIcon />,
-                tone: desk.canPost ? "good" : "muted",
               },
               {
                 label: "Channel",
@@ -205,30 +187,6 @@ export function SlackPage() {
               },
             ]}
           />
-          <ChartRow>
-            <ChartPanel
-              title="Messages by author"
-              description="Who is posting in this channel"
-              className="lg:col-span-4"
-            >
-              <SoftBarChart data={authorMix} layout="horizontal" compact />
-            </ChartPanel>
-            <ChartPanel title="Source mix" description="Live vs reference rows" className="lg:col-span-4">
-              <SoftDonutChart
-                data={countBy(desk.messages, (item) => {
-                  if (item.source.origin === "live") return "Live";
-                  if (item.source.origin === "sample") return "Sample";
-                  if (item.source.origin === "documented") return "Documented";
-                  return "Needs review";
-                })}
-                centerLabel="Sources"
-                compact
-              />
-            </ChartPanel>
-            <ChartPanel title="Share by author" description="Relative volume" className="lg:col-span-4">
-              <SoftProgressTracks data={authorMix} />
-            </ChartPanel>
-          </ChartRow>
           <p className="text-sm text-muted-foreground" aria-live="polite">
             Channel: <span className="font-medium text-foreground">#{desk.channelName}</span>
             {desk.connected ? " · Live" : " · Sample until the bot token is connected"}

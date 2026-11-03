@@ -2,20 +2,13 @@ import type { ComponentType } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDaysIcon,
-  AudioLinesIcon,
   FileTextIcon,
   FolderKanbanIcon,
   LayoutDashboardIcon,
   ListTodoIcon,
   LogOutIcon,
   MessageSquareIcon,
-  BookOpenIcon,
-  BotIcon,
-  NotebookPenIcon,
-  PlugIcon,
-  ScrollTextIcon,
   SparklesIcon,
-  UsersIcon,
   WaypointsIcon,
 } from "lucide-react";
 import { useAuth } from "../app/AuthContext";
@@ -119,35 +112,18 @@ export function AppShell() {
         { to: "/", label: "Overview", end: true, icon: LayoutDashboardIcon },
         { to: "/projects", label: "Projects", icon: FolderKanbanIcon },
         { to: "/tasks", label: "Tasks", icon: ListTodoIcon },
-        { to: "/calendar", label: "Agenda", icon: CalendarDaysIcon },
-        { to: "/meetings", label: "Meetings", icon: AudioLinesIcon },
+        { to: "/calendar", label: "Calendar", icon: CalendarDaysIcon },
         { to: "/documents", label: "Documents", icon: FileTextIcon },
         { to: "/follow-ups", label: "Follow-ups", icon: MessageSquareIcon },
         { to: "/slack", label: "Slack", icon: SlackIcon },
       ],
     },
     {
-      id: "nav-ioc",
-      label: "IOC",
-      items: [{ to: "/ioc", label: "Consultants and budget", icon: UsersIcon }],
-    },
-    {
       id: "nav-intel",
       label: "Intelligence",
       items: [
-        { to: "/assistant", label: "Assistant", icon: BotIcon },
-        { to: "/claude", label: "Claude", icon: BookOpenIcon },
         { to: "/ai", label: "AI tools", icon: SparklesIcon },
         { to: "/map", label: "System map", icon: WaypointsIcon },
-      ],
-    },
-    {
-      id: "nav-control",
-      label: "Control",
-      items: [
-        { to: "/integrations", label: "Integrations", icon: PlugIcon },
-        ...(user?.permissions.viewAudit ? [{ to: "/audit", label: "Audit trail", icon: ScrollTextIcon }] : []),
-        { to: "/pilot", label: "Delivery notes", icon: NotebookPenIcon },
       ],
     },
   ];

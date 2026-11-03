@@ -6,7 +6,6 @@ const links = [
   { to: "/", label: "Overview" },
   { to: "/projects", label: "Projects" },
   { to: "/tasks", label: "Tasks" },
-  { to: "/ioc", label: "IOC" },
   { to: "/map", label: "System map" },
 ];
 

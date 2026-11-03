@@ -10,7 +10,7 @@ function projectIdFrom(req: Request): string | undefined {
 export class TasksController {
   list = asyncHandler(async (req: Request, res: Response) => {
     const result = await tasksService.list(requireUser(req), projectIdFrom(req));
-    sendData(res, result.items, { note: result.note });
+    sendData(res, result.items, { note: result.note, statuses: result.statuses });
   });
 }
 

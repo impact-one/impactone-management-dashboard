@@ -1,14 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CircleAlertIcon, MessageSquareIcon, RadioIcon, ListTodoIcon } from "lucide-react";
-import {
-  ChartPanel,
-  ChartRow,
-  SoftBarChart,
-  SoftDonutChart,
-  SoftProgressTracks,
-  countBy,
-} from "../components/charts";
 import { DataTable } from "../components/DataTable";
 import { Due } from "../components/Due";
 import { FilterBar, FilterOrigin, FilterSearch, FilterSelect, ResultCount } from "../components/FilterBar";
@@ -41,18 +33,6 @@ export function FollowUpsPage() {
     return true;
   });
 
-  const statusMix = useMemo(() => countBy(rows, (item) => plainStatus(item.status)), [rows]);
-  const originMix = useMemo(
-    () =>
-      countBy(rows, (item) => {
-        if (item.source.origin === "live") return "Live";
-        if (item.source.origin === "sample") return "Sample";
-        if (item.source.origin === "documented") return "Documented";
-        return "Needs review";
-      }),
-    [rows],
-  );
-  const projectMix = useMemo(() => countBy(rows, (item) => item.projectName), [rows]);
   const overdueCount = rows.filter((item) => dueState(item.dueDate) === "overdue").length;
   const openCount = rows.filter((item) => item.status !== "done" && item.status !== "closed").length;
 
@@ -76,17 +56,6 @@ export function FollowUpsPage() {
               { label: "Statuses", value: statuses.length, icon: <ListTodoIcon /> },
             ]}
           />
-          <ChartRow>
-            <ChartPanel title="Status mix" className="lg:col-span-5">
-              <SoftBarChart data={statusMix} layout="horizontal" compact />
-            </ChartPanel>
-            <ChartPanel title="Source mix" className="lg:col-span-3">
-              <SoftDonutChart data={originMix} centerLabel="Sources" compact />
-            </ChartPanel>
-            <ChartPanel title="By project" className="lg:col-span-4">
-              <SoftProgressTracks data={projectMix} />
-            </ChartPanel>
-          </ChartRow>
           <FilterBar>
             <FilterSearch id="follow-search" label="Search follow-ups" value={query} onChange={setQuery} />
             <FilterSelect
@@ -137,7 +106,7 @@ export function FollowUpsPage() {
               {
                 key: "status",
                 header: "Status",
-                render: (row) => <span className="capitalize">{plainStatus(row.status)}</span>,
+                render: (row) => row.status,
               },
               { key: "due", header: "Due", render: (row) => <Due value={row.dueDate} /> },
               { key: "source", header: "Source", render: (row) => <SourceBadge origin={row.source.origin} /> },

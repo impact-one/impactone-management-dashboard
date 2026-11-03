@@ -47,6 +47,12 @@ export function formatMoney(amount: number | null, currency = "SAR"): string {
   }).format(amount);
 }
 
+export function isTaskClosed(task: { status: string; closed?: boolean }): boolean {
+  if (typeof task.closed === "boolean") return task.closed;
+  return task.status === "done";
+}
+
+/** Keep the source string. Do not rename, respell, or change case. */
 export function plainStatus(value: string): string {
-  return value.replaceAll("-", " ");
+  return value;
 }

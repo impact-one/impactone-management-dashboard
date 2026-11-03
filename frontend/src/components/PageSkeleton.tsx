@@ -77,7 +77,7 @@ export function TablePageSkeleton({
   );
 }
 
-/** Metric strip + charts + feeds — Overview */
+/** Metric strip + feeds — Overview */
 export function OverviewSkeleton({ label = "Loading overview" }: { label?: string }) {
   return (
     <div className="grid gap-4" role="status" aria-label={label}>
@@ -90,67 +90,35 @@ export function OverviewSkeleton({ label = "Loading overview" }: { label?: strin
         ))}
       </div>
       <Block className="h-10 w-full rounded-lg" />
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-8">
-          <div className="border-b px-4 py-3">
-            <Block className="h-4 w-32" />
-          </div>
-          <div className="p-4">
-            <Block className="h-[210px] w-full rounded-lg" />
-          </div>
+      <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
+        <div className="border-b px-4 py-3">
+          <Block className="h-4 w-28" />
         </div>
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-4">
-          <div className="border-b px-4 py-3">
-            <Block className="h-4 w-28" />
-          </div>
-          <div className="grid place-items-center p-6">
-            <Block className="size-36 rounded-full" />
-          </div>
+        <div className="flex flex-wrap gap-2 p-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Block key={i} className="h-8 w-28 rounded-full" />
+          ))}
         </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-3">
-          <div className="border-b px-4 py-3">
-            <Block className="h-4 w-24" />
-          </div>
-          <div className="grid place-items-center p-6">
-            <Block className="size-28 rounded-full" />
-          </div>
-        </div>
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-4">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <Block className="h-4 w-24" />
-            <Block className="h-7 w-16" />
-          </div>
-          <div className="divide-y">
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Block className="h-4 w-[75%]" />
-                  <Block className="h-3 w-[45%]" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {Array.from({ length: 2 }, (_, panel) => (
+          <div key={panel} className="surface overflow-hidden rounded-2xl bg-card ring-0">
+            <div className="border-b px-4 py-3">
+              <Block className="h-4 w-24" />
+            </div>
+            <div className="divide-y">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Block className="h-4 w-[75%]" />
+                    <Block className="h-3 w-[45%]" />
+                  </div>
+                  <Block className="h-5 w-16 shrink-0" />
                 </div>
-                <Block className="h-5 w-16 shrink-0" />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0 lg:col-span-5">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <Block className="h-4 w-24" />
-            <Block className="h-7 w-16" />
-          </div>
-          <div className="divide-y">
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Block className="h-4 w-[75%]" />
-                  <Block className="h-3 w-[45%]" />
-                </div>
-                <Block className="h-5 w-16 shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
       <div className="mt-4">
         <Block className="mb-3 h-4 w-24" />

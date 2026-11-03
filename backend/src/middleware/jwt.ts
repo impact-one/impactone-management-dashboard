@@ -6,7 +6,7 @@ import { AppError } from "../lib/AppError.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { permissionsFor } from "../lib/permissions.js";
 import { clearSessionCookie, readAccessToken } from "../lib/sessionCookie.js";
-import { revokeSession, sessionIsActive } from "../lib/sessions.js";
+import { acceptPresentedSession, revokeSession } from "../lib/sessions.js";
 import type { PublicUser } from "../types/domain.js";
 
 export function toPublicUser(user: {
@@ -34,7 +34,7 @@ function userFromToken(token: string): PublicUser {
     typeof decoded === "string" ||
     typeof decoded.sub !== "string" ||
     typeof decoded.jti !== "string" ||
-    !sessionIsActive(decoded.jti)
+    !acceptPresentedSession(decoded.jti)
   ) {
     throw new AppError(401, "Session expired. Sign in again.");
   }

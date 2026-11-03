@@ -28,7 +28,7 @@ export function readBearerToken(req: Request): string | undefined {
 }
 
 export function readAccessToken(req: Request): string | undefined {
-  return readCookieToken(req) ?? readBearerToken(req);
+  return readBearerToken(req) ?? readCookieToken(req);
 }
 
 export function setSessionCookie(res: Response, token: string) {

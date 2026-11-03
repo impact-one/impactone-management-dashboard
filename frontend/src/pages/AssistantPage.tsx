@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LightbulbIcon, ListTreeIcon, PenLineIcon, SearchIcon, TextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "../components/Breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { api } from "../lib/api";
@@ -103,8 +104,9 @@ export function AssistantPage() {
 
   return (
     <>
+      <Breadcrumbs items={[{ label: "AI tools", to: "/ai" }, { label: "ChatGPT" }]} />
       <PageHeader
-        eyebrow="Assistant"
+        eyebrow="AI tools"
         title="ChatGPT"
         lede="Pick a task, write the note, and read the reply before you share it."
       />

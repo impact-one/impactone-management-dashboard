@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDaysIcon, PlusIcon, RadioIcon, Share2Icon, ClockIcon } from "lucide-react";
+import { CalendarDaysIcon, PlusIcon, Share2Icon, ClockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { DeskSkeleton } from "../components/PageSkeleton";
 import { SourceBadge } from "../components/SourceBadge";
-import { ChartPanel, ChartRow, SoftDonutChart, SoftProgressTracks, countBy } from "../components/charts";
 import { MetricStrip, Section } from "../components/Surface";
 import { api } from "../lib/api";
 import { useApi } from "../lib/useApi";
@@ -33,6 +32,8 @@ export function CalendarPage() {
 
   const meetings = desk?.meetings ?? [];
   const grouped = useMemo(() => groupByDay(meetings), [meetings]);
+  const bookedCount = meetings.filter((meeting) => meeting.date).length;
+  const waitingCount = meetings.length - bookedCount;
 
   async function run(action: () => Promise<string>) {
     setFormError(undefined);
@@ -50,7 +51,7 @@ export function CalendarPage() {
     <>
       <PageHeader
         eyebrow="Work"
-        title="Agenda"
+        title="Calendar"
         lede={
           desk && !desk.canSchedule
             ? "View upcoming meetings. Booking and calendar sharing require manager access."
@@ -73,37 +74,26 @@ export function CalendarPage() {
         <div className="space-y-6">
           <MetricStrip
             items={[
-              { label: "Meetings", value: meetings.length, icon: <CalendarDaysIcon /> },
-              { label: "Calendars", value: desk.calendars.length, icon: <Share2Icon /> },
-              { label: "Live", value: meetings.filter((row) => row.source.origin === "live").length, icon: <RadioIcon /> },
-              { label: "Days shown", value: grouped.length, icon: <ClockIcon /> },
               {
-                label: "Can book",
-                value: desk.canSchedule ? "Yes" : "No",
-                icon: <PlusIcon />,
-                tone: desk.canSchedule ? "good" : "muted",
+                label: "Scheduled",
+                value: bookedCount,
+                hint: "Meetings that already have a day and time.",
+                icon: <CalendarDaysIcon />,
+              },
+              {
+                label: "Not booked yet",
+                value: waitingCount,
+                hint: "Named here, but no time has been set.",
+                icon: <ClockIcon />,
+              },
+              {
+                label: "Calendars",
+                value: desk.calendars.length,
+                hint: "Google calendars this account can open.",
+                icon: <Share2Icon />,
               },
             ]}
           />
-          {meetings.length > 0 ? (
-            <ChartRow>
-              <ChartPanel title="Meeting sources" className="lg:col-span-4">
-                <SoftDonutChart
-                  data={countBy(meetings, (row) => {
-                    if (row.source.origin === "live") return "Live";
-                    if (row.source.origin === "sample") return "Sample";
-                    if (row.source.origin === "documented") return "Documented";
-                    return "Needs review";
-                  })}
-                  centerLabel="Meetings"
-                  compact
-                />
-              </ChartPanel>
-              <ChartPanel title="By day" className="lg:col-span-8">
-                <SoftProgressTracks data={grouped.map(([day, rows]) => ({ name: dayHeading(day), value: rows.length }))} />
-              </ChartPanel>
-            </ChartRow>
-          ) : null}
           {booking && desk.canSchedule ? (
             <ScheduleForm
               calendars={desk.calendars}
@@ -119,7 +109,7 @@ export function CalendarPage() {
             />
           ) : null}
 
-          <Section title={meetings.length === 1 ? "1 meeting" : `${meetings.length} meetings`}>
+          <Section title="Schedule">
             {meetings.length === 0 ? (
               <EmptyState
                 title="Nothing on the agenda"
@@ -133,17 +123,20 @@ export function CalendarPage() {
               <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
                 {grouped.map(([day, rows]) => (
                   <div key={day} className="border-b border-border/60 last:border-b-0">
-                    <h3 className="bg-muted/50 px-5 py-2.5 text-xs font-semibold text-muted-foreground">
+                    <h3 className="bg-muted/40 px-5 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                       {dayHeading(day)}
                     </h3>
                     <ul className="list-none p-0">
                       {rows.map((row) => (
-                        <li key={row.id} className="flex flex-col gap-2 border-b px-4 py-3.5 last:border-b-0 sm:flex-row sm:gap-6">
-                          <div className="border-l-2 border-primary/35 pl-3 sm:w-36 sm:shrink-0">
-                            <p className="text-sm font-medium tabular-nums">{row.timeLabel}</p>
-                            <p className="text-xs text-muted-foreground">{row.timeZone}</p>
+                        <li
+                          key={row.id}
+                          className="grid gap-3 border-b border-border/60 px-4 py-4 last:border-b-0 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-6 sm:px-5"
+                        >
+                          <div className="sm:pt-0.5">
+                            <p className="text-sm font-semibold tabular-nums text-foreground">{row.timeLabel}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{row.timeZone}</p>
                           </div>
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               {row.href ? (
                                 <a
@@ -163,10 +156,18 @@ export function CalendarPage() {
                               {row.calendarName}
                               {row.location ? ` · ${row.location}` : ""}
                             </p>
-                            <p className="mt-1 text-sm text-foreground/80">{guestSummary(row)}</p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {row.reminders.length > 0 ? row.reminders.map(reminderLabel).join(" · ") : "No reminders"}
-                            </p>
+                            <dl className="mt-3 grid gap-1.5 text-sm">
+                              <div className="grid gap-0.5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-3">
+                                <dt className="text-xs font-medium text-muted-foreground">Guests</dt>
+                                <dd className="text-sm text-foreground">{guestSummary(row)}</dd>
+                              </div>
+                              <div className="grid gap-0.5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-3">
+                                <dt className="text-xs font-medium text-muted-foreground">Reminders</dt>
+                                <dd className="text-sm text-foreground">
+                                  {row.reminders.length > 0 ? row.reminders.map(reminderLabel).join(" · ") : "None set"}
+                                </dd>
+                              </div>
+                            </dl>
                           </div>
                         </li>
                       ))}
@@ -186,8 +187,9 @@ export function CalendarPage() {
                       <p className="text-sm font-medium">{calendar.name}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {calendar.timeZone}
-                        {calendar.primary ? " · Primary" : ""} · {roleLabel(calendar.accessRole)}
+                        {calendar.primary ? " · Main calendar" : ""}
                       </p>
+                      <p className="mt-1 text-sm text-foreground">{accessSentence(calendar.accessRole)}</p>
                     </div>
                     <SourceBadge origin={calendar.source.origin} />
                   </div>
@@ -202,7 +204,7 @@ export function CalendarPage() {
                     </ul>
                   ) : (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      {desk.canSchedule ? "No one else is on this list." : "The sharing list is hidden for your role."}
+                      {desk.canSchedule ? "Not shared with anyone else." : "The sharing list is hidden for your role."}
                     </p>
                   )}
                   {desk.canSchedule && calendar.accessRole === "owner" ? (
@@ -648,6 +650,13 @@ function splitEmails(value: string) {
     .split(/[,\s]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function accessSentence(role: CalendarAccess) {
+  if (role === "owner") return "You own this calendar.";
+  if (role === "writer") return "You can add and edit meetings on it.";
+  if (role === "reader") return "You can see the meeting details.";
+  return "You can see when people are busy, not the meeting details.";
 }
 
 function roleLabel(role: CalendarAccess) {

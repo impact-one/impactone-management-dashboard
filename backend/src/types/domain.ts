@@ -2,7 +2,7 @@ export type Role = "executive" | "manager" | "consultant" | "viewer";
 
 export type Origin = "live" | "sample" | "documented" | "needs-review";
 
-export type TaskStatus = "open" | "in-progress" | "done" | "blocked";
+export type TaskStatus = string;
 
 export type WorkStatus = "active" | "in-progress" | "planned" | "needs-review";
 
@@ -61,6 +61,8 @@ export interface Task {
   owner: string;
   responsibility: string;
   status: TaskStatus;
+  /** Set from the source when it marks the task finished. ClickUp uses status.type closed or done. */
+  closed?: boolean;
   dueDate: string | null;
   source: DataSource;
   href: string | null;

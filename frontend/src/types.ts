@@ -23,6 +23,7 @@ export interface Envelope<T> {
   meta: {
     liveWritesEnabled: boolean;
     note?: string;
+    statuses?: string[];
   };
 }
 
@@ -59,6 +60,7 @@ export interface Task {
   owner: string;
   responsibility: string;
   status: string;
+  closed?: boolean;
   dueDate: string | null;
   source: DataSource;
   href: string | null;
@@ -380,8 +382,10 @@ export interface DashboardData {
     openTasks: number;
     deadlinesThisWeek: number;
     openFollowUps: number;
+    meetings: number;
     aiNeedsReview: number;
   };
+  statuses: { name: string; count: number }[];
   projects: Project[];
   deadlines: Task[];
   followUps: FollowUp[];

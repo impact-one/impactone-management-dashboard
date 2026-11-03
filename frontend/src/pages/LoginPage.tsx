@@ -67,7 +67,6 @@ export function LoginPage() {
             {[
               "Role-based access for leadership, managers, consultants, and viewers.",
               "Live Calendar, Drive, Slack, Otter, and ClickUp where credentials are connected.",
-              "Secure signed-in sessions — tokens stay in httpOnly cookies.",
             ].map((point) => (
               <li key={point} className="rounded-xl bg-card/70 px-3.5 py-3 leading-6 text-muted-foreground ring-1 ring-border/50">
                 <span className="text-foreground">{point}</span>

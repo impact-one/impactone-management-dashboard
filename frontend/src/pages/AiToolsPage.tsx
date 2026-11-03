@@ -1,6 +1,7 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import {
+  ArrowUpRightIcon,
   AudioLinesIcon,
   BotIcon,
   BoxesIcon,
@@ -10,22 +11,67 @@ import {
   WorkflowIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  ChartPanel,
-  ChartRow,
-  SoftBarChart,
-  SoftDonutChart,
-  SoftProgressTracks,
-  countBy,
-} from "../components/charts";
 import { EmptyState } from "../components/EmptyState";
 import { FilterBar, FilterOrigin, FilterSearch, ResultCount } from "../components/FilterBar";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { CardsSkeleton } from "../components/PageSkeleton";
-import { CardGrid, MetricStrip, RecordCard, Section } from "../components/Surface";
+import { CardGrid, MetricStrip, RecordCard } from "../components/Surface";
 import { plainStatus } from "../lib/format";
 import { useApi } from "../lib/useApi";
-import type { AiCatalog, Envelope, Origin } from "../types";
+import type { AiCatalog, AiTool, Envelope, Origin } from "../types";
+
+function toolPath(name: string): string | null {
+  const key = name.toLowerCase();
+  if (key.includes("otter")) return "/ai/otter";
+  if (key.includes("chatgpt")) return "/ai/chatgpt";
+  if (key.includes("claude")) return "/ai/claude";
+  return null;
+}
+
+function ToolCard({ tool }: { tool: AiTool }) {
+  const Icon = toolIcon(tool.name);
+  const to = toolPath(tool.name);
+  const card = (
+    <RecordCard
+      kicker={plainStatus(tool.kind)}
+      title={
+        to ? (
+          <span className="inline-flex items-center gap-1">
+            {tool.name}
+            <ArrowUpRightIcon className="size-3.5 text-primary" />
+          </span>
+        ) : (
+          tool.name
+        )
+      }
+      origin={tool.source.origin}
+      summary={tool.purpose}
+      mark={<Icon className="size-4" />}
+      fields={[
+        { label: "Owner", value: tool.owner },
+        { label: "Connections", value: tool.connections, wide: true },
+        { label: "Source", value: tool.source.detail, wide: true },
+      ]}
+      flags={tool.reviewFlags}
+    />
+  );
+
+  return (
+    <li>
+      {to ? (
+        <Link
+          to={to}
+          aria-label={`Open ${tool.name}`}
+          className="block h-full rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {card}
+        </Link>
+      ) : (
+        card
+      )}
+    </li>
+  );
+}
 
 function toolIcon(name: string): ComponentType<{ className?: string }> {
   const key = name.toLowerCase();
@@ -56,19 +102,9 @@ export function AiToolsPage() {
     });
   }, [tools, query, origin, needsReview]);
 
-  const reviewCount =
-    catalog?.tools.filter((tool) => tool.reviewFlags.length > 0 || tool.source.origin === "needs-review").length ?? 0;
-  const kindMix = useMemo(() => countBy(tools, (tool) => plainStatus(tool.kind)), [tools]);
-  const originMix = useMemo(
-    () =>
-      countBy(tools, (tool) => {
-        if (tool.source.origin === "live") return "Live";
-        if (tool.source.origin === "sample") return "Sample";
-        if (tool.source.origin === "documented") return "Documented";
-        return "Needs review";
-      }),
-    [tools],
-  );
+  const openHere = tools.filter((tool) => toolPath(tool.name)).length;
+  const unconfirmed = tools.filter((tool) => tool.source.origin === "needs-review").length;
+  const proposed = tools.filter((tool) => tool.kind === "proposed").length;
 
   return (
     <>
@@ -88,24 +124,35 @@ export function AiToolsPage() {
         <div className="space-y-6">
           <MetricStrip
             items={[
-              { label: "Tools", value: catalog.tools.length, icon: <BoxesIcon /> },
-              { label: "To review", value: reviewCount, icon: <SparklesIcon /> },
-              { label: "Visible", value: visible.length, icon: <BotIcon /> },
-              { label: "Kinds", value: kindMix.length, icon: <WorkflowIcon /> },
-              { label: "Owners", value: new Set(tools.map((tool) => tool.owner)).size, icon: <MicIcon /> },
+              {
+                label: "Catalogue",
+                value: tools.length,
+                hint: "Tools named for this pilot.",
+                icon: <BoxesIcon />,
+              },
+              {
+                label: "Open here",
+                value: openHere,
+                hint: "Otter, ChatGPT, and Claude.",
+                icon: <SparklesIcon />,
+                tone: "good",
+              },
+              {
+                label: "Unconfirmed",
+                value: unconfirmed,
+                hint: "Listed, but how they are used is still open.",
+                icon: <MicIcon />,
+                tone: unconfirmed > 0 ? "warn" : "muted",
+              },
+              {
+                label: "Proposed",
+                value: proposed,
+                hint: "Evaluation only. Not installed.",
+                icon: <WorkflowIcon />,
+                tone: "muted",
+              },
             ]}
           />
-          <ChartRow>
-            <ChartPanel title="Tool kinds" className="lg:col-span-5">
-              <SoftBarChart data={kindMix} layout="horizontal" compact />
-            </ChartPanel>
-            <ChartPanel title="Source mix" className="lg:col-span-3">
-              <SoftDonutChart data={originMix} centerLabel="Sources" compact />
-            </ChartPanel>
-            <ChartPanel title="Kind tracks" className="lg:col-span-4">
-              <SoftProgressTracks data={kindMix} />
-            </ChartPanel>
-          </ChartRow>
           <FilterBar>
             <FilterSearch id="ai-search" label="Search tools" value={query} onChange={setQuery} />
             <FilterOrigin value={origin} onChange={setOrigin} />
@@ -124,41 +171,12 @@ export function AiToolsPage() {
             <EmptyState title="No tools match" description="Clear filters to see the full catalogue." />
           ) : (
             <CardGrid>
-              {visible.map((tool) => {
-                const Icon = toolIcon(tool.name);
-                return (
-                  <li key={tool.id}>
-                    <RecordCard
-                      kicker={plainStatus(tool.kind)}
-                      title={tool.name}
-                      origin={tool.source.origin}
-                      summary={tool.purpose}
-                      mark={<Icon className="size-4" />}
-                      fields={[
-                        { label: "Owner", value: tool.owner },
-                        { label: "Connections", value: tool.connections, wide: true },
-                        { label: "Source", value: tool.source.detail, wide: true },
-                      ]}
-                      flags={tool.reviewFlags}
-                    />
-                  </li>
-                );
-              })}
+              {visible.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
             </CardGrid>
           )}
-          <Section title="Agents">
-            <EmptyState title="No agents named" description={catalog.agentNote} />
-          </Section>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/assistant">Open ChatGPT assistant</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/claude">Open Claude</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/pilot#librechat">LibreChat evaluation</Link>
-            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link to="/map">Automation map</Link>
             </Button>

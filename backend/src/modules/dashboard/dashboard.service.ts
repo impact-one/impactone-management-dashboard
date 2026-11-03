@@ -1,4 +1,5 @@
 import { store } from "../../data/store.js";
+import { countStatuses, isTaskClosed } from "../../lib/taskStatus.js";
 import type { PublicUser } from "../../types/domain.js";
 import { calendarService } from "../calendar/calendar.service.js";
 import { followUpsService } from "../follow-ups/follow-ups.service.js";
@@ -25,7 +26,7 @@ export class DashboardService {
     ]);
     const projects = projectsService.list(user);
     const followUps = followUpsService.list(user).filter((item) => item.status === "open");
-    const openTasks = taskResult.items.filter((task) => task.status !== "done");
+    const openTasks = taskResult.items.filter((task) => !isTaskClosed(task));
     const horizon = addDays(todayISO(), 7);
     const deadlines = openTasks
       .filter((task) => task.dueDate && task.dueDate <= horizon)
@@ -37,8 +38,10 @@ export class DashboardService {
         openTasks: openTasks.length,
         deadlinesThisWeek: deadlines.length,
         openFollowUps: followUps.length,
+        meetings: meetingResult.items.length,
         aiNeedsReview: store.aiTools.filter((tool) => tool.source.origin === "needs-review" || tool.reviewFlags.length > 0).length,
       },
+      statuses: countStatuses(taskResult.items, taskResult.statuses),
       projects,
       deadlines,
       followUps: followUps.slice(0, 5),

@@ -16,7 +16,7 @@ export class AuthController {
     const session = await authService.login(parsed.data.email, parsed.data.password);
     setSessionCookie(res, session.token);
     req.user = session.user;
-    sendData(res, { user: session.user });
+    sendData(res, { user: session.user, token: session.token });
   });
 
   me = asyncHandler(async (req: Request, res: Response) => {

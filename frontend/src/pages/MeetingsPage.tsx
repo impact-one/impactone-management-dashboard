@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AudioLinesIcon, ListChecksIcon, RefreshCwIcon, Share2Icon, ShieldCheckIcon, UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "../components/Breadcrumbs";
 import { FilterBar, FilterSearch, ResultCount } from "../components/FilterBar";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { CardsSkeleton } from "../components/PageSkeleton";
@@ -117,10 +118,11 @@ export function MeetingsPage() {
 
   return (
     <>
+      <Breadcrumbs items={[{ label: "AI tools", to: "/ai" }, { label: "Otter.ai" }]} />
       <PageHeader
-        eyebrow="Work"
-        title="Meetings"
-        lede="Otter transcripts, summaries, and action items. Confirm consent and sharing before the notes open."
+        eyebrow="AI tools"
+        title="Otter.ai"
+        lede="Transcripts, summaries, and action items. Confirm consent and sharing before the notes open."
       >
         <Button type="button" variant="outline" onClick={() => reload()} disabled={loading}>
           <RefreshCwIcon data-icon="inline-start" className={loading ? "animate-spin" : undefined} />
@@ -156,7 +158,6 @@ export function MeetingsPage() {
             ]}
           />
           <Note>{desk.implementationNote}</Note>
-          <p className="text-sm leading-6 text-muted-foreground">{desk.operatingModel}</p>
           {desk.meetings.length === 0 ? (
             <Section title="Conversations">
               <p className="text-sm text-muted-foreground">No meeting notes are available for this role.</p>

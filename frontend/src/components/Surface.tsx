@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { SoftSparkline, sparkFromValue } from "./charts";
 import { cn } from "@/lib/utils";
 import { ReviewList, SourceBadge } from "./SourceBadge";
 import type { Origin } from "../types";
@@ -63,8 +62,15 @@ export function MetricStrip({
     tone?: "default" | "good" | "warn" | "muted";
   }[];
 }) {
+  const layout =
+    items.length <= 3
+      ? "grid-cols-1 sm:grid-cols-3"
+      : items.length === 4
+        ? "grid-cols-2 xl:grid-cols-4"
+        : "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5";
+
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+    <div className={cn("grid gap-3 sm:gap-4", layout)}>
       {items.map((item) => {
         const tone = item.tone ?? "default";
         const valueClass =
@@ -75,17 +81,13 @@ export function MetricStrip({
               : tone === "muted"
                 ? "text-muted-foreground"
                 : "text-foreground";
-        const sparkSeed =
-          typeof item.value === "number"
-            ? Math.max(item.value, 2)
-            : Math.max(3, ([...item.label].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 7) + 3);
 
         return (
           <Card
             key={item.label}
-            className="surface relative flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-card py-0 shadow-none ring-0 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-primary before:via-[var(--brand-leaf)] before:to-[var(--brand-cyan)]"
+            className="surface flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-card py-0 shadow-none ring-0"
           >
-            <CardContent className="flex h-full flex-col px-3.5 pt-3.5 pb-2.5">
+            <CardContent className="flex h-full flex-col px-3.5 py-3.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-medium text-muted-foreground">{item.label}</p>
                 <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-primary ring-1 ring-primary/10 [&_svg]:size-3.5">
@@ -101,16 +103,7 @@ export function MetricStrip({
               >
                 {item.value}
               </p>
-              {item.hint ? (
-                <p className="mt-1 truncate text-[11px] text-muted-foreground">{item.hint}</p>
-              ) : (
-                <p className="mt-1 text-[11px] text-transparent select-none" aria-hidden="true">
-                  —
-                </p>
-              )}
-              <div className="mt-auto border-t border-border/50 pt-2.5">
-                <SoftSparkline values={sparkFromValue(sparkSeed)} />
-              </div>
+              {item.hint ? <p className="mt-1.5 text-xs leading-4 text-muted-foreground">{item.hint}</p> : null}
             </CardContent>
           </Card>
         );

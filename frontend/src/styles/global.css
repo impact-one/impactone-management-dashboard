@@ -274,11 +274,6 @@
   container-name: data-table;
 }
 
-[data-slot="card"] .recharts-responsive-container,
-[data-slot="card-content"] .recharts-wrapper {
-  max-width: 100%;
-}
-
 /* Stack tables into cards below ~tablet content width */
 @container data-table (width < 40rem) {
   .responsive-table [data-slot="table-container"] {

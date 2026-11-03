@@ -1,14 +1,17 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Breadcrumbs({
   items,
+  className,
 }: {
   items: { label: string; to?: string }[];
+  className?: string;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-3">
+    <nav aria-label="Breadcrumb" className={cn("mb-3", className)}>
       <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
         {items.map((item, index) => {
           const last = index === items.length - 1;

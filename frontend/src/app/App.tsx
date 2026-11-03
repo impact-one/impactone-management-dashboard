@@ -3,17 +3,13 @@ import { AppShell } from "../components/AppShell";
 import { AiToolsPage } from "../pages/AiToolsPage";
 import { AssistantPage } from "../pages/AssistantPage";
 import { ClaudePage } from "../pages/ClaudePage";
-import { AuditPage } from "../pages/AuditPage";
 import { CalendarPage } from "../pages/CalendarPage";
 import { DocumentsPage } from "../pages/DocumentsPage";
 import { FollowUpsPage } from "../pages/FollowUpsPage";
-import { IntegrationsPage } from "../pages/IntegrationsPage";
-import { IocPage } from "../pages/IocPage";
 import { LoginPage } from "../pages/LoginPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { OverviewPage } from "../pages/OverviewPage";
-import { PilotPage } from "../pages/PilotPage";
 import { ProjectPage } from "../pages/ProjectPage";
 import { ProjectsPage } from "../pages/ProjectsPage";
 import { SlackPage } from "../pages/SlackPage";
@@ -37,18 +33,17 @@ export function App() {
               <Route path="projects/:id" element={<ProjectPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="calendar" element={<CalendarPage />} />
-              <Route path="meetings" element={<MeetingsPage />} />
+              <Route path="meetings" element={<Navigate to="/ai/otter" replace />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="follow-ups" element={<FollowUpsPage />} />
               <Route path="slack" element={<SlackPage />} />
-              <Route path="ioc" element={<IocPage />} />
-              <Route path="assistant" element={<AssistantPage />} />
-              <Route path="claude" element={<ClaudePage />} />
+              <Route path="assistant" element={<Navigate to="/ai/chatgpt" replace />} />
+              <Route path="claude" element={<Navigate to="/ai/claude" replace />} />
               <Route path="ai" element={<AiToolsPage />} />
+              <Route path="ai/otter" element={<MeetingsPage />} />
+              <Route path="ai/chatgpt" element={<AssistantPage />} />
+              <Route path="ai/claude" element={<ClaudePage />} />
               <Route path="map" element={<SystemMapPage />} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="audit" element={<AuditPage />} />
-              <Route path="pilot" element={<PilotPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

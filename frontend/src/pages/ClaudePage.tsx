@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FileTextIcon, LayersIcon, PenLineIcon, SquareTerminalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "../components/Breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
 import { api } from "../lib/api";
@@ -99,8 +100,9 @@ export function ClaudePage() {
 
   return (
     <>
+      <Breadcrumbs items={[{ label: "AI tools", to: "/ai" }, { label: "Claude" }]} />
       <PageHeader
-        eyebrow="Document reasoning"
+        eyebrow="AI tools"
         title="Claude"
         lede="Work from a long document. Check important facts before you share the reply."
       />

@@ -7,11 +7,11 @@ For Mikolaj's end-of-pilot review. This is a working prototype, not a production
 - Sign-in with role-based screens: executive, manager, consultant, viewer.
 - Overview of projects, deadlines, follow-ups, and meetings.
 - Project pages for Impact One operations, King Salman Park Hills, social intake, and the AI overview.
-- Tasks, calendar, documents, follow-ups, and Slack channel updates.
+- Tasks, calendar, documents, follow-ups, Slack channel updates, and Otter meeting notes.
 - IOC screen: consultant directory, sample budget, milestones.
 - AI tools list, with an empty agents list where the brief names none.
 - System map of tools, the Instagram → Make → Slack flow, and data sources.
-- Integrations page. Calendar schedules meetings when a token is set. Drive keeps the library when a token is set. Slack reads and posts in one configured channel when a bot token is set. ClickUp stays read-only. Make, Instagram, and Sheets have no client.
+- Integrations page. Calendar schedules meetings when a token is set. Drive keeps the library when a token is set. Slack reads and posts in one configured channel when a bot token is set. Otter reads meeting notes when an Enterprise key is set. ClickUp stays read-only. Make, Instagram, and Sheets have no client.
 - Audit trail of authenticated reads, in memory.
 - Pilot notes: access model, architecture, LibreChat evaluation, cost, assumptions, risks.
 - Layout usable with a phone-width viewport (bottom navigation and stacked tables).
@@ -24,6 +24,7 @@ For Mikolaj's end-of-pilot review. This is a working prototype, not a production
 | Google Calendar | Labelled workspace in Asia/Riyadh until a Calendar token is set. Then scheduling, invitations, free/busy, and sharing go to Google |
 | Google Drive | Labelled library until a Drive token is set. Then folders, empty Docs and Sheets, and sharing go to Google. File contents stay in Drive |
 | Slack channel | Sample until `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID` are set. Then staff can read recent messages and post a daily update. Invite the bot to the channel first |
+| Otter meeting notes | Sample until `OTTER_API_KEY` is set on an Enterprise workspace. Staff confirm consent and sharing before notes open. Action items are not copied to ClickUp |
 | IOC budget | Fictional SAR figures. The finance sheet is not connected |
 | King Salman Park Hills dates and consultant fees | Placeholders. Not Saray's plan |
 | ChatGPT assistant | Built for drafts, research, analysis, brainstorming, and summaries. Live replies wait on `OPENAI_API_KEY`. Review outputs and do not paste confidential information |
@@ -36,7 +37,7 @@ For Mikolaj's end-of-pilot review. This is a working prototype, not a production
 | Sign-in | Local demo accounts. Not company SSO |
 | Audit log | Lost when the API restarts |
 
-Live ClickUp, Calendar, Drive, and Slack results are shown only to executive and manager roles, because those APIs are team-wide.
+Live ClickUp, Calendar, Drive, Slack, and Otter results are shown only to executive and manager roles, because those APIs are team-wide.
 
 ## Demo path
 

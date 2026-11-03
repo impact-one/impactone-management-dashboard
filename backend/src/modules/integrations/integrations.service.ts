@@ -5,6 +5,7 @@ import { clickUpClient } from "./clients/clickup.client.js";
 import { driveClient } from "../documents/drive.client.js";
 import { assistantClient } from "../assistant/assistant.client.js";
 import { claudeClient } from "../claude/claude.client.js";
+import { otterClient } from "../otter/otter.client.js";
 import { slackClient } from "../slack/slack.client.js";
 
 function fromClient(id: string, name: string, result: LiveResult<unknown>): IntegrationStatus {
@@ -114,6 +115,43 @@ function driveStatus(result: LiveResult<unknown>): IntegrationStatus {
     origin: "live",
     detail: result.message,
     limitation: "Sharing can be writer, commenter, or reader. File contents stay in Drive.",
+    lastCheckedAt: result.checkedAt,
+  };
+}
+
+function otterStatus(result: LiveResult<unknown>): IntegrationStatus {
+  if (!result.configured) {
+    return {
+      id: "otter",
+      name: "Otter.ai",
+      mode: "meetings",
+      configured: false,
+      origin: "sample",
+      detail: "Transcripts, summaries, and action items run on labelled sample notes.",
+      limitation: "Set OTTER_API_KEY from an Enterprise workspace. Confirm consent and sharing before opening notes.",
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  if (!result.ok) {
+    return {
+      id: "otter",
+      name: "Otter.ai",
+      mode: "meetings",
+      configured: true,
+      origin: "needs-review",
+      detail: result.message,
+      limitation: result.message,
+      lastCheckedAt: result.checkedAt,
+    };
+  }
+  return {
+    id: "otter",
+    name: "Otter.ai",
+    mode: "meetings",
+    configured: true,
+    origin: "live",
+    detail: result.message,
+    limitation: "Read only. This desk does not change transcript sharing or send action items to ClickUp.",
     lastCheckedAt: result.checkedAt,
   };
 }
@@ -244,13 +282,14 @@ function claudeStatus(result: LiveResult<unknown>): IntegrationStatus {
 
 export class IntegrationsService {
   async list(): Promise<IntegrationStatus[]> {
-    const [clickup, calendar, drive, slack, assistant, claude] = await Promise.all([
+    const [clickup, calendar, drive, slack, assistant, claude, otter] = await Promise.all([
       clickUpClient.get(),
       calendarClient.get(),
       driveClient.get(),
       slackClient.get(),
       assistantClient.status(),
       claudeClient.status(),
+      otterClient.get(),
     ]);
     return [
       fromClient("clickup", "ClickUp", clickup),
@@ -259,6 +298,7 @@ export class IntegrationsService {
       slackStatus(slack),
       assistantStatus(assistant),
       claudeStatus(claude),
+      otterStatus(otter),
       absent(
         "sheets",
         "IOC budget Google Sheet",

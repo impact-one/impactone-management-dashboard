@@ -10,6 +10,7 @@ import { FollowUpsPage } from "../pages/FollowUpsPage";
 import { IntegrationsPage } from "../pages/IntegrationsPage";
 import { IocPage } from "../pages/IocPage";
 import { LoginPage } from "../pages/LoginPage";
+import { MeetingsPage } from "../pages/MeetingsPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { OverviewPage } from "../pages/OverviewPage";
 import { PilotPage } from "../pages/PilotPage";
@@ -36,6 +37,7 @@ export function App() {
               <Route path="projects/:id" element={<ProjectPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="calendar" element={<CalendarPage />} />
+              <Route path="meetings" element={<MeetingsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="follow-ups" element={<FollowUpsPage />} />
               <Route path="slack" element={<SlackPage />} />

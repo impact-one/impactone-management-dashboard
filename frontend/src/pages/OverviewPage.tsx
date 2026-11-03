@@ -185,7 +185,14 @@ function Overview({ dashboard }: { dashboard: DashboardData }) {
         )}
       </Section>
 
-      <Section title="Meetings">
+      <Section
+        title="Meetings"
+        action={
+          <Button variant="outline" size="sm" className="h-8" asChild>
+            <Link to="/meetings">Meeting notes</Link>
+          </Button>
+        }
+      >
         {dashboard.meetingNote ? (
           <div className="mb-5">
             <Note>{dashboard.meetingNote}</Note>

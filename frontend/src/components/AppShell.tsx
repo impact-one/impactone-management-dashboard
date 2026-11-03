@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDaysIcon,
+  AudioLinesIcon,
   FileTextIcon,
   FolderKanbanIcon,
   LayoutDashboardIcon,
@@ -119,6 +120,7 @@ export function AppShell() {
         { to: "/projects", label: "Projects", icon: FolderKanbanIcon },
         { to: "/tasks", label: "Tasks", icon: ListTodoIcon },
         { to: "/calendar", label: "Agenda", icon: CalendarDaysIcon },
+        { to: "/meetings", label: "Meetings", icon: AudioLinesIcon },
         { to: "/documents", label: "Documents", icon: FileTextIcon },
         { to: "/follow-ups", label: "Follow-ups", icon: MessageSquareIcon },
         { to: "/slack", label: "Slack", icon: SlackIcon },
@@ -229,7 +231,7 @@ export function AppShell() {
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-left">
-              Preview environment with live Calendar, Drive, Slack, ChatGPT, Claude, and read-only ClickUp where connected.
+              Preview environment with live Calendar, Drive, Slack, ChatGPT, Claude, Otter, and read-only ClickUp where connected.
             </TooltipContent>
           </Tooltip>
         </header>

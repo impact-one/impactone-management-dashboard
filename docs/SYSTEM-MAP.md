@@ -19,7 +19,7 @@ One page for the Day 1 review. The same picture is in the app under System map. 
 
 1. Local pilot sign-in.
 2. API modules, one per area.
-3. ClickUp stays read-only. Google Calendar schedules meetings, invitations, availability, and sharing. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. ChatGPT drafts, researches, analyzes, brainstorms, and summarizes a note the user submits. Sample or off until access exists. File contents stay in Drive.
+3. ClickUp stays read-only. Google Calendar schedules meetings, invitations, availability, and sharing. Google Drive keeps folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. ChatGPT drafts, researches, analyzes, brainstorms, and summarizes a note the user submits. Claude writes, reviews, and synthesizes a long document the user pastes. Otter reads transcripts, summaries, and action items when an Enterprise key is set. Sample or off until access exists. File contents stay in Drive. Otter audio stays in Otter.
 
 ## Tools already named
 
@@ -35,6 +35,7 @@ ChatGPT is the assistant for drafts, research, analysis, brainstorming, and summ
 | Google Calendar | Team | Meetings, invitations, availability, and sharing |
 | Google Drive | Team | Folders, empty Docs and Sheets, names, links, and sharing |
 | Slack | Team | One channel: recent messages and daily updates, once a bot token exists |
+| Otter.ai | Team | Transcripts, summaries, and action items, once an Enterprise API key exists. Confirm consent and sharing first |
 | IOC budget sheet | IOC finance | Only after approval. Sample until then |
 | Access tracker | Kulde | Tool catalogue. Link not provided |
 | KSP Hills project plan | Saray | IOC workstreams. File not connected |

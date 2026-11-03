@@ -377,10 +377,71 @@ export interface ClaudeRun {
   origin: "live";
 }
 
+export interface OtterPerson {
+  name: string;
+  email: string | null;
+}
+
+export interface OtterShare {
+  name: string;
+  email: string | null;
+  permission: string;
+  kind: "person" | "channel";
+  discoverability: string | null;
+}
+
+export interface OtterActionItem {
+  id: string;
+  text: string;
+  assignee: string | null;
+  completed: boolean;
+}
+
+export interface OtterInsight {
+  topic: string;
+  points: string[];
+}
+
+export interface OtterMeeting {
+  id: string;
+  title: string;
+  summary: string;
+  transcript: string;
+  transcriptTruncated: boolean;
+  createdAt: string;
+  owner: string;
+  url: string | null;
+  joinUrl: string | null;
+  guests: OtterPerson[];
+  shares: OtterShare[];
+  actionItems: OtterActionItem[];
+  insights: OtterInsight[];
+  summaryStatus: string | null;
+  actionStatus: string | null;
+  source: DataSource;
+}
+
+export interface OtterConsentCheck {
+  id: string;
+  label: string;
+}
+
+export interface OtterDesk {
+  connected: boolean;
+  canRead: boolean;
+  bestFit: string;
+  implementationNote: string;
+  operatingModel: string;
+  consentStatement: string;
+  consentChecks: OtterConsentCheck[];
+  steps: { name: string; detail: string }[];
+  meetings: OtterMeeting[];
+}
+
 export interface IntegrationStatus {
   id: string;
   name: string;
-  mode: "read-only" | "schedule" | "library" | "channel" | "assistant" | "not-connected";
+  mode: "read-only" | "schedule" | "library" | "channel" | "assistant" | "meetings" | "not-connected";
   configured: boolean;
   origin: Origin;
   detail: string;

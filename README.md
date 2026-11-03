@@ -2,7 +2,7 @@
 
 Pilot prototype for Impact One and IOC. It is a management desk: projects, tasks, deadlines, documents, follow-ups, IOC consultants and budget layout, and a map of the tools and automations already named in the brief.
 
-Google Calendar schedules meetings, invitations, availability, and shared calendars. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. ClickUp stays read-only. It does not post to Make or Instagram. File contents stay in Drive.
+Google Calendar schedules meetings, invitations, availability, and shared calendars. Google Drive keeps the library: folders, empty Docs and Sheets, and sharing. Slack reads and posts in one configured channel. Otter.ai supplies meeting transcripts, summaries, and action items when an Enterprise key is set. ClickUp stays read-only. It does not post to Make or Instagram. File contents stay in Drive. Otter audio stays in Otter.
 
 ## Run locally
 
@@ -47,15 +47,17 @@ frontend/src/pages/
 docs/
 ```
 
-Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, slack, assistant, ai-tools, automations, integrations, system-map, audit, proposal.
+Modules: auth, dashboard, projects, tasks, documents, follow-ups, milestones, consultants, budgets, calendar, otter, slack, assistant, claude, ai-tools, automations, integrations, system-map, audit, proposal.
 
 ChatGPT drafts, research, analysis, brainstorming, and summaries run from **Assistant** once `OPENAI_API_KEY` is set in `backend/.env`. See [ChatGPT setup](docs/CHATGPT-INTEGRATION.md).
 
 Claude writes, reviews, and synthesizes a long document from **Claude** once `ANTHROPIC_API_KEY` is set. See [Claude setup](docs/CLAUDE-INTEGRATION.md).
 
+Otter.ai supplies meeting transcripts, summaries, and action items once `OTTER_API_KEY` is set. See [Otter setup](docs/OTTER-INTEGRATION.md).
+
 ## Data labels
 
-- **Live** — connected to ClickUp, Calendar, Drive, Slack, ChatGPT, or Claude during this session.
+- **Live** — connected to ClickUp, Calendar, Drive, Slack, ChatGPT, Claude, or Otter during this session.
 - **Sample** — fictional or placeholder, safe to show without the real file.
 - **Documented** — stated in the pilot brief.
 - **Needs review** — unknown. Not guessed.
@@ -69,4 +71,5 @@ Claude writes, reviews, and synthesizes a long document from **Claude** once `AN
 - [Slack setup](docs/SLACK-INTEGRATION.md)
 - [ChatGPT setup](docs/CHATGPT-INTEGRATION.md)
 - [Claude setup](docs/CLAUDE-INTEGRATION.md)
+- [Otter setup](docs/OTTER-INTEGRATION.md)
 - [Cost estimate](docs/COST-ESTIMATE.md)

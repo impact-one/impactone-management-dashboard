@@ -66,7 +66,7 @@ export function LoginPage() {
           <ul className="mt-10 grid list-none gap-3 p-0 text-sm text-foreground">
             {[
               "Role-based access for leadership, managers, consultants, and viewers.",
-              "Live Calendar, Drive, Slack, and ClickUp where credentials are connected.",
+              "Live Calendar, Drive, Slack, Otter, and ClickUp where credentials are connected.",
               "Secure signed-in sessions — tokens stay in httpOnly cookies.",
             ].map((point) => (
               <li key={point} className="rounded-xl bg-card/70 px-3.5 py-3 leading-6 text-muted-foreground ring-1 ring-border/50">

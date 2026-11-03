@@ -31,4 +31,5 @@ export const env = {
   openaiModel: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
   anthropicApiKey: optional("ANTHROPIC_API_KEY"),
   anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5-5",
+  otterApiKey: optional("OTTER_API_KEY"),
 };

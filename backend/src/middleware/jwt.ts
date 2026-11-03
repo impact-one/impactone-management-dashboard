@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import { store } from "../data/store.js";
+import { initStore, store } from "../data/store.js";
 import { AppError } from "../lib/AppError.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { permissionsFor } from "../lib/permissions.js";
@@ -54,6 +54,7 @@ export function revokePresentedToken(token: string) {
 
 /** Verifies the session cookie, or a Bearer token for non-browser clients, and sets req.user. */
 export const jwtMiddleware = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  await initStore();
   const token = readAccessToken(req);
   if (!token) throw new AppError(401, "Sign in required.");
   try {

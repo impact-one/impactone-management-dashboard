@@ -4,9 +4,16 @@ import { createApp } from "./app.js";
 
 const app = createApp();
 
-await initStore();
-
 const host = "0.0.0.0";
 app.listen(env.port, host, () => {
   console.log(`API listening on http://${host}:${env.port}`);
 });
+
+initStore()
+  .then(() => {
+    console.log("Demo accounts ready.");
+  })
+  .catch((error: unknown) => {
+    console.error(error);
+    process.exit(1);
+  });

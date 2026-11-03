@@ -42,14 +42,17 @@ class Store {
 
 export const store = new Store();
 
-export async function initStore() {
+let starting: Promise<void> | undefined;
+
+export function initStore() {
+  starting ??= loadStore();
+  return starting;
+}
+
+async function loadStore() {
   if (store.ready) return;
-  store.users = await Promise.all(
-    userSeeds.map(async (user) => ({
-      ...user,
-      passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10),
-    })),
-  );
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  store.users = userSeeds.map((user) => ({ ...user, passwordHash }));
   store.ready = true;
 }
 

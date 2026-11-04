@@ -63,7 +63,7 @@ export class TasksService {
   async file(user: PublicUser, taskId: string, fileId: string, thumb: boolean) {
     const task = await this.get(user, taskId);
     if (!task) throw new AppError(404, "Task not found.");
-    const file = task.attachments.find((item) => item.id === fileId);
+    const file = (task.attachments ?? []).find((item) => item.id === fileId);
     if (!file) throw new AppError(404, "File not found.");
     const target = thumb ? file.thumbnailUrl ?? file.url : file.url;
     if (!target || !isAllowedFileHop(target, true)) throw new AppError(404, "File not found.");

@@ -1,5 +1,5 @@
 export function formatDate(value: string | null): string {
-  if (!value) return "Date not set";
+  if (typeof value !== "string" || !value) return "Date not set";
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return value;
   return new Intl.DateTimeFormat("en-GB", {
@@ -22,7 +22,7 @@ export function formatWhen(value: string): string {
 }
 
 export function dueState(value: string | null): "none" | "overdue" | "soon" | "later" {
-  if (!value) return "none";
+  if (typeof value !== "string" || !value) return "none";
   const today = new Date().toISOString().slice(0, 10);
   if (value < today) return "overdue";
   const horizon = new Date();
@@ -47,20 +47,24 @@ export function formatMoney(amount: number | null, currency = "SAR"): string {
   }).format(amount);
 }
 
+function statusKey(task: { status?: unknown; closed?: boolean }): string {
+  return typeof task.status === "string" ? task.status.trim().toLowerCase() : "";
+}
+
 export function isTaskClosed(task: { status: string; closed?: boolean }): boolean {
   if (typeof task.closed === "boolean") return task.closed;
-  return task.status === "done";
+  return statusKey(task) === "done";
 }
 
 export function isCompletedStatus(task: { status: string; closed?: boolean }): boolean {
   if (isTaskClosed(task)) return true;
-  const key = task.status.trim().toLowerCase();
+  const key = statusKey(task);
   return key === "complete" || key === "completed" || key === "closed";
 }
 
 export function isInProgressStatus(task: { status: string; closed?: boolean }): boolean {
   if (isCompletedStatus(task)) return false;
-  const key = task.status.trim().toLowerCase();
+  const key = statusKey(task);
   return key.includes("progress") || key === "doing" || key === "active";
 }
 

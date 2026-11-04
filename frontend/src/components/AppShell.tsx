@@ -12,6 +12,7 @@ import {
   WaypointsIcon,
 } from "lucide-react";
 import { useAuth } from "../app/AuthContext";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { Logo } from "./Logo";
 import { SlackIcon } from "./SlackIcon";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -212,7 +213,9 @@ export function AppShell() {
           </Tooltip>
         </header>
         <div key={pathname} className="page-rise mx-auto w-full min-w-0 max-w-[1600px] flex-1 px-3 py-5 sm:px-4 sm:py-6 md:px-5 md:py-6 lg:px-6">
-          <Outlet />
+          <ErrorBoundary resetKey={pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </SidebarInset>
     </SidebarProvider>

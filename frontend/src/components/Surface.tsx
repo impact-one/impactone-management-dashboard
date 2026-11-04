@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRightIcon } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ReviewList, SourceBadge } from "./SourceBadge";
@@ -147,6 +149,7 @@ export function RecordCard({
   fields,
   flags,
   mark,
+  to,
 }: {
   kicker?: string;
   title: ReactNode;
@@ -155,9 +158,16 @@ export function RecordCard({
   fields?: { label: string; value: ReactNode; wide?: boolean }[];
   flags?: string[];
   mark?: ReactNode;
+  /** When set, the whole card navigates here and shows an arrow affordance. */
+  to?: string;
 }) {
   return (
-    <Card className="lift surface h-full gap-0 overflow-hidden rounded-2xl border-0 bg-card py-0 shadow-none ring-0">
+    <Card
+      className={cn(
+        "lift surface h-full gap-0 overflow-hidden rounded-2xl border-0 bg-card py-0 shadow-none ring-0",
+        to && "relative cursor-pointer",
+      )}
+    >
       <CardHeader className="flex flex-row items-start justify-between gap-3 px-5 pt-5 pb-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary ring-1 ring-primary/10 [&_svg]:size-4">
@@ -165,10 +175,38 @@ export function RecordCard({
           </span>
           <div className="min-w-0">
             {kicker ? <p className="text-xs font-medium text-muted-foreground">{kicker}</p> : null}
-            <h3 className="text-[15px] leading-snug font-semibold tracking-tight">{title}</h3>
+            <h3
+              className={cn(
+                "text-[15px] leading-snug font-semibold tracking-tight",
+                to && "transition-colors group-hover/card:text-primary",
+              )}
+            >
+              {to ? (
+                <Link
+                  to={to}
+                  className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-2xl after:content-[''] focus-visible:after:ring-3 focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+                >
+                  {title}
+                </Link>
+              ) : (
+                title
+              )}
+            </h3>
           </div>
         </div>
-        {origin ? <SourceBadge origin={origin} /> : null}
+        {to || origin ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {to ? (
+              <span
+                aria-hidden="true"
+                className="grid size-7 place-items-center rounded-full bg-accent text-primary ring-1 ring-primary/15 transition-transform duration-150 motion-safe:group-hover/card:translate-x-0.5"
+              >
+                <ArrowRightIcon className="size-3.5" />
+              </span>
+            ) : null}
+            {origin ? <SourceBadge origin={origin} /> : null}
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3 px-5 pt-1 pb-5">
         {summary ? <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{summary}</p> : null}

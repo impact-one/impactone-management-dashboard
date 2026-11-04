@@ -6,7 +6,7 @@ import type { Envelope, User } from "../types";
 interface AuthState {
   user: User | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, persist?: boolean) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -35,12 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       ready,
-      async login(email: string, password: string) {
+      async login(email: string, password: string, persist = false) {
         const result = await api<Envelope<{ user: User; token: string }>>("/auth/login", {
           method: "POST",
           body: JSON.stringify({ email, password }),
         });
-        writeSessionToken(result.data.token);
+        writeSessionToken(result.data.token, persist);
         setUser(result.data.user);
       },
       async logout() {

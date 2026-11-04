@@ -111,6 +111,35 @@ describe("slack file mapping", () => {
     assert.equal(slackPermalink("https://files.slack.com/files-pri/a.png"), null);
   });
 
+  it("treats a jpeg file type as an image even when the mime type is generic", () => {
+    const mapped = mapChannelMessages(
+      [
+        {
+          text: "",
+          ts: "1700000002.000100",
+          user: "U1",
+          files: [
+            {
+              id: "F00JPG01",
+              name: "board.jpg",
+              title: "Board",
+              mimetype: "application/octet-stream",
+              filetype: "jpg",
+              pretty_type: "JPEG",
+              size: 1200,
+              permalink: "https://impactone.slack.com/files/U1/F00JPG01/board.jpg",
+              url_private: "https://files.slack.com/files-pri/T1-F00JPG01/board.jpg",
+            },
+          ],
+        },
+      ],
+      channel,
+      new Map(),
+    );
+    assert.equal(mapped[0]?.message.files[0]?.kind, "image");
+    assert.equal(mapped[0]?.message.files[0]?.preview, true);
+  });
+
   it("recognises image bytes and rejects markup", () => {
     assert.equal(sniffImageType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00])), "image/jpeg");
     assert.equal(sniffImageType(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), "image/png");

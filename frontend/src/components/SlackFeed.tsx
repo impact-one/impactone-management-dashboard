@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowUpRightIcon,
   FileArchiveIcon,
   FileAudioIcon,
   FileIcon,
@@ -7,6 +8,7 @@ import {
   FileTextIcon,
   FileVideoIcon,
   ImageIcon,
+  PlayIcon,
   SearchIcon,
   XIcon,
 } from "lucide-react";
@@ -15,67 +17,153 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatWhen } from "../lib/format";
 import { readSessionToken } from "../lib/session";
-import { displayAuthor, messageBody, slackParts, type SlackTextPart } from "../lib/slackText";
+import { displayAuthor, messageBody, plainSlackText, slackParts, type SlackTextPart } from "../lib/slackText";
 import type { SlackFile, SlackMessage } from "../types";
 import { SourceBadge } from "./SourceBadge";
 
 const previewCache = new Map<string, string>();
 const previewInflight = new Map<string, Promise<string>>();
 
+type FileFilter = "all" | "files" | "images";
+
+const FILTERS: { id: FileFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "files", label: "Files" },
+  { id: "images", label: "Images" },
+];
+
 export function SlackFeed({ messages }: { messages: SlackMessage[] }) {
   const [query, setQuery] = useState("");
-  const needle = query.trim().toLowerCase();
-  const visible = useMemo(() => {
-    if (!needle) return messages;
-    return messages.filter((message) => searchable(message).includes(needle));
-  }, [messages, needle]);
+  const [fileFilter, setFileFilter] = useState<FileFilter>("all");
+  const parsed = useMemo(() => parseSlackQuery(query), [query]);
+  const filtering = Boolean(parsed) || fileFilter !== "all";
+  const visible = useMemo(
+    () => messages.filter((message) => matchesFilter(message, fileFilter) && matchesQuery(message, parsed)),
+    [messages, fileFilter, parsed],
+  );
+  const highlight = parsed?.text.join(" ") ?? "";
+  const summary = filtering
+    ? `Showing ${visible.length} of ${messages.length}`
+    : `${messages.length} recent ${messages.length === 1 ? "message" : "messages"}`;
+  const [announced, setAnnounced] = useState("");
+
+  useEffect(() => {
+    if (!filtering) {
+      setAnnounced("");
+      return;
+    }
+    const timer = window.setTimeout(() => setAnnounced(summary), 250);
+    return () => window.clearTimeout(timer);
+  }, [filtering, summary]);
 
   return (
     <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
-      <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Slack messages</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground" aria-live="polite">
-            {needle
-              ? `Showing ${visible.length} of ${messages.length}`
-              : `${messages.length} recent ${messages.length === 1 ? "message" : "messages"}`}
-          </p>
+      <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3.5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Slack messages</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{summary}</p>
+            <p className="sr-only" aria-live="polite">
+              {announced}
+            </p>
+          </div>
+          <form
+            role="search"
+            className="grid w-full gap-1 sm:max-w-sm"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <label htmlFor="slack-message-search" className="text-xs font-medium text-foreground">
+                Search
+              </label>
+              <span id="slack-search-hint" className="text-[11px] text-muted-foreground">
+                from:name, has:file, has:image
+              </span>
+            </div>
+            <div className="relative">
+              <SearchIcon
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                id="slack-message-search"
+                name="q"
+                type="search"
+                value={query}
+                placeholder="Search messages"
+                aria-describedby="slack-search-hint"
+                aria-controls="slack-message-list"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
+                autoComplete="off"
+                className="h-10 bg-background pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden [@media(pointer:coarse)]:h-12"
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && query) {
+                    event.preventDefault();
+                    setQuery("");
+                  }
+                }}
+              />
+              {query ? (
+                <button
+                  type="button"
+                  className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Clear search"
+                  onClick={() => setQuery("")}
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              ) : null}
+            </div>
+          </form>
         </div>
-        <div className="relative w-full sm:max-w-xs">
-          <SearchIcon
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            id="slack-message-search"
-            value={query}
-            placeholder="Search messages"
-            aria-label="Search messages"
-            aria-controls="slack-message-list"
-            className="h-9 bg-background pr-9 pl-9"
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          {query ? (
-            <button
-              type="button"
-              className="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Clear search"
-              onClick={() => setQuery("")}
-            >
-              <XIcon className="size-3.5" />
-            </button>
-          ) : null}
-        </div>
+        <fieldset>
+          <legend className="sr-only">Show</legend>
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((filter) => {
+              const count =
+                filter.id === "files"
+                  ? messages.filter((message) => (message.files ?? []).length > 0).length
+                  : filter.id === "images"
+                    ? messages.filter((message) => (message.files ?? []).some((file) => file.kind === "image")).length
+                    : messages.length;
+              const checked = fileFilter === filter.id;
+              return (
+                <label
+                  key={filter.id}
+                  className={cn(
+                    "inline-flex min-h-8 cursor-pointer items-center rounded-full border px-3 text-xs font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring [@media(pointer:coarse)]:min-h-11",
+                    checked
+                      ? "border-primary/30 bg-accent text-primary"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="slack-message-filter"
+                    className="sr-only"
+                    value={filter.id}
+                    checked={checked}
+                    onChange={() => setFileFilter(filter.id)}
+                  />
+                  {filter.label}
+                  <span className="ml-1.5 tabular-nums text-[11px] opacity-80">{count}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
       </div>
 
       {visible.length === 0 ? (
-        <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-          {needle ? "No messages match that search." : "No messages in this channel yet."}
-        </p>
+        <p className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyCopy(messages.length, filtering, fileFilter, Boolean(parsed))}</p>
       ) : (
         <ul id="slack-message-list" aria-label="Slack messages" className="divide-y divide-border/60">
           {visible.map((message) => (
-            <MessageRow key={message.id} message={message} query={query.trim()} />
+            <MessageRow key={message.id} message={message} query={highlight} />
           ))}
         </ul>
       )}
@@ -107,15 +195,34 @@ function MessageRow({ message, query }: { message: SlackMessage; query: string }
             <SlackBody text={message.text} query={query} />
           </p>
         ) : null}
-        {files.length > 0 ? (
-          <ul className="mt-2 grid gap-2">
-            {files.map((file) => (
-              <li key={file.id}>{file.kind === "image" ? <SlackImage file={file} query={query} /> : <FileCard file={file} query={query} />}</li>
-            ))}
-          </ul>
-        ) : null}
+        {files.length > 0 ? <Attachments files={files} query={query} /> : null}
       </div>
     </li>
+  );
+}
+
+function Attachments({ files, query }: { files: SlackFile[]; query: string }) {
+  const images = files.filter((file) => file.kind === "image" && file.preview);
+  const rest = files.filter((file) => !(file.kind === "image" && file.preview));
+  return (
+    <div className="mt-2 grid gap-2">
+      {images.length > 0 ? (
+        <ul role="list" className={cn("grid gap-2", images.length > 1 && "max-w-xl sm:grid-cols-2")}>
+          {images.map((file) => (
+            <li key={file.id}>
+              <SlackImage file={file} query={query} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {rest.length > 0 ? (
+        <ul role="list" className="grid gap-2">
+          {rest.map((file) => (
+            <li key={file.id}>{file.preview ? <DocumentCard file={file} query={query} /> : <FileCard file={file} query={query} />}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
@@ -160,136 +267,179 @@ function Part({ part, query }: { part: SlackTextPart; query: string }) {
 }
 
 function SlackImage({ file, query }: { file: SlackFile; query: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const preview = usePreview(file.preview ? file.id : null, visible);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || visible) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
-      },
-      { rootMargin: "240px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [visible]);
-
+  const { ref, visible } = useOnScreen(true);
+  const preview = usePreview(file.id, visible);
   if (!file.preview || preview.failed) return <FileCard file={file} query={query} />;
 
-  const image = preview.src ? (
+  const frame = preview.src ? (
     <img
       src={preview.src}
-      alt={file.title || file.name}
-      className="max-h-72 max-w-full rounded-xl border border-border/80 bg-muted/20 object-contain sm:max-w-sm"
+      alt=""
+      decoding="async"
+      loading="lazy"
+      className="max-h-80 w-full bg-muted/30 object-contain"
     />
   ) : (
-    <div className="h-40 w-full max-w-sm animate-pulse rounded-xl bg-muted" aria-hidden="true" />
+    <div className="h-40 w-full animate-pulse bg-muted motion-reduce:animate-none" aria-hidden="true" />
+  );
+
+  const caption = (
+    <figcaption className="truncate px-1 pt-1.5 text-xs text-muted-foreground">
+      <Highlight text={file.title || file.name} query={query} />
+      <span>
+        {" · "}
+        {file.prettyType}
+        {file.size > 0 ? ` · ${formatBytes(file.size)}` : ""}
+        {file.permalink ? " · Open in Slack" : ""}
+      </span>
+    </figcaption>
+  );
+
+  const figure = (
+    <figure>
+      <div className="overflow-hidden rounded-xl border border-border/80">{frame}</div>
+      {caption}
+    </figure>
   );
 
   return (
     <div ref={ref} className="max-w-sm">
       {file.permalink ? (
-        <a href={file.permalink} target="_blank" rel="noreferrer" className="inline-block max-w-full" title="Open in Slack">
-          {image}
+        <a href={file.permalink} target="_blank" rel="noreferrer" className="block max-w-full">
+          {figure}
         </a>
       ) : (
-        image
+        figure
       )}
-      <p className="mt-1 truncate text-xs text-muted-foreground">
-        <Highlight text={file.title || file.name} query={query} />
-      </p>
+    </div>
+  );
+}
+
+function DocumentCard({ file, query }: { file: SlackFile; query: string }) {
+  const { ref, visible } = useOnScreen(Boolean(file.preview));
+  const preview = usePreview(file.id, visible);
+  if (preview.failed) return <FileCard file={file} query={query} />;
+
+  const media = isPlayable(file);
+  const body = (
+    <>
+      <div className="relative bg-muted/40">
+        {preview.src ? (
+          <img src={preview.src} alt="" decoding="async" loading="lazy" className="h-44 w-full object-cover object-top" />
+        ) : (
+          <div className="grid h-36 place-items-center text-muted-foreground">
+            <FileGlyph file={file} className="size-8" />
+          </div>
+        )}
+        {media ? (
+          <span className="absolute inset-0 grid place-items-center">
+            <span className="grid size-12 place-items-center rounded-full bg-background/90 text-foreground shadow-sm">
+              <PlayIcon className="size-5" aria-hidden="true" />
+            </span>
+          </span>
+        ) : null}
+      </div>
+      <span className="flex items-center gap-3 border-t border-border/70 px-3 py-2.5">
+        <FileMeta file={file} query={query} />
+      </span>
+    </>
+  );
+
+  return (
+    <div ref={ref} className="max-w-sm">
+      <FileShell file={file} className="block overflow-hidden rounded-xl border border-border/80 bg-background hover:bg-muted/30">
+        {body}
+      </FileShell>
     </div>
   );
 }
 
 function FileCard({ file, query }: { file: SlackFile; query: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const preview = usePreview(file.preview && file.kind !== "image" ? file.id : null, visible);
-  const Icon = fileIcon(file);
-  const label = `${file.title || file.name}, ${file.prettyType}, ${formatBytes(file.size)}`;
+  return (
+    <FileShell
+      file={file}
+      className="flex w-full max-w-md items-center gap-3 rounded-xl border border-border/80 bg-background px-3 py-2.5 text-left hover:bg-muted/40"
+    >
+      <FileMeta file={file} query={query} />
+    </FileShell>
+  );
+}
 
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || visible || !file.preview) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
-      },
-      { rootMargin: "240px" },
+function FileShell({ file, className, children }: { file: SlackFile; className: string; children: ReactNode }) {
+  if (file.permalink) {
+    return (
+      <a href={file.permalink} target="_blank" rel="noreferrer" className={className}>
+        {children}
+      </a>
     );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [file.preview, visible]);
+  }
+  return <div className={className}>{children}</div>;
+}
 
-  const body = (
+function FileMeta({ file, query }: { file: SlackFile; query: string }) {
+  return (
     <>
-      {preview.src ? (
-        <img src={preview.src} alt="" className="size-12 shrink-0 rounded-lg border border-border/70 object-cover" />
-      ) : (
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-primary">
-          <Icon className="size-4" aria-hidden="true" />
-        </span>
-      )}
-      <span className="min-w-0">
+      <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", fileTone(file))}>
+        <FileGlyph file={file} className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-foreground">
           <Highlight text={file.title || file.name} query={query} />
         </span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
           {file.prettyType}
           {file.size > 0 ? ` · ${formatBytes(file.size)}` : ""}
+          {file.permalink ? " · Open in Slack" : ""}
         </span>
       </span>
+      {file.permalink ? <ArrowUpRightIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
     </>
-  );
-
-  const className = cn(
-    "flex w-full max-w-md items-center gap-3 rounded-xl border border-border/80 bg-background px-3 py-2.5 text-left",
-    file.permalink && "hover:bg-muted/40",
-  );
-
-  return (
-    <div ref={ref}>
-      {file.permalink ? (
-        <a href={file.permalink} target="_blank" rel="noreferrer" className={className} aria-label={`Open ${label} in Slack`}>
-          {body}
-        </a>
-      ) : (
-        <div className={className} aria-label={label}>
-          {body}
-        </div>
-      )}
-    </div>
   );
 }
 
 function Highlight({ text, query }: { text: string; query: string }) {
-  const needle = query.trim();
-  if (!needle) return <>{text}</>;
-  const lower = text.toLowerCase();
-  const q = needle.toLowerCase();
+  const terms = [...new Set(query.trim().toLowerCase().split(/\s+/).filter(Boolean))].sort((a, b) => b.length - a.length);
+  if (terms.length === 0) return <>{text}</>;
+  const pattern = new RegExp(terms.map(escapeRegExp).join("|"), "gi");
   const nodes: ReactNode[] = [];
   let cursor = 0;
-  let key = 0;
-  while (cursor < text.length) {
-    const index = lower.indexOf(q, cursor);
-    if (index < 0) {
-      nodes.push(text.slice(cursor));
-      break;
-    }
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index ?? 0;
     if (index > cursor) nodes.push(text.slice(cursor, index));
     nodes.push(
-      <mark key={key} className="rounded-sm bg-primary/15 px-0.5 text-foreground">
-        {text.slice(index, index + needle.length)}
+      <mark key={`${index}-${match[0]}`} className="rounded-sm bg-primary/15 px-0.5 text-foreground">
+        {match[0]}
       </mark>,
     );
-    key += 1;
-    cursor = index + needle.length;
+    cursor = index + match[0].length;
   }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
   return <>{nodes}</>;
+}
+
+function useOnScreen(enabled: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || !enabled || visible) return;
+    const rect = node.getBoundingClientRect();
+    if (rect.width > 0 && rect.bottom >= -240 && rect.top <= window.innerHeight + 240) {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
+      },
+      { rootMargin: "240px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [enabled, visible]);
+
+  return { ref, visible };
 }
 
 function usePreview(fileId: string | null, enabled: boolean) {
@@ -346,10 +496,73 @@ function loadPreview(fileId: string): Promise<string> {
   return request;
 }
 
+interface ParsedQuery {
+  from?: string;
+  has?: "file" | "image" | "link";
+  text: string[];
+}
+
+function parseSlackQuery(raw: string): ParsedQuery | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let from: string | undefined;
+  let has: ParsedQuery["has"];
+  const text: string[] = [];
+  for (const match of trimmed.matchAll(/"([^"]+)"|(\S+)/g)) {
+    const token = (match[1] ?? match[2] ?? "").trim();
+    if (!token) continue;
+    const lower = token.toLowerCase();
+    if (lower.startsWith("from:")) {
+      const value = lower.slice(5).replace(/^@/, "");
+      if (value) from = value;
+      continue;
+    }
+    if (lower.startsWith("has:")) {
+      const value = lower.slice(4);
+      if (value === "file" || value === "files" || value === "document" || value === "attachment") has = "file";
+      else if (value === "image" || value === "images" || value === "img" || value === "photo") has = "image";
+      else if (value === "link" || value === "url") has = "link";
+      continue;
+    }
+    text.push(lower);
+  }
+  return { from, has, text };
+}
+
+function matchesQuery(message: SlackMessage, parsed: ParsedQuery | null): boolean {
+  if (!parsed) return true;
+  const author = displayAuthor(message.author).toLowerCase();
+  if (parsed.from && !author.includes(parsed.from)) return false;
+  const files = message.files ?? [];
+  if (parsed.has === "file" && files.length === 0) return false;
+  if (parsed.has === "image" && !files.some((file) => file.kind === "image")) return false;
+  if (parsed.has === "link" && !slackParts(message.text).some((part) => part.type === "link") && !/https?:\/\//i.test(message.text)) {
+    return false;
+  }
+  if (parsed.text.length === 0) return true;
+  const haystack = searchable(message);
+  return parsed.text.every((term) => haystack.includes(term));
+}
+
+function matchesFilter(message: SlackMessage, filter: FileFilter): boolean {
+  const files = message.files ?? [];
+  if (filter === "files") return files.length > 0;
+  if (filter === "images") return files.some((file) => file.kind === "image");
+  return true;
+}
+
+function emptyCopy(total: number, filtering: boolean, filter: FileFilter, hasQuery: boolean): string {
+  if (!filtering || total === 0) return "No messages in this channel yet.";
+  if (filter === "images") return hasQuery ? "No images match that search." : "No images in recent messages.";
+  if (filter === "files") return hasQuery ? "No files match that search." : "No files in recent messages.";
+  return "No messages match that search.";
+}
+
 function searchable(message: SlackMessage): string {
   return [
     displayAuthor(message.author),
     message.text,
+    plainSlackText(message.text),
     ...(message.files ?? []).flatMap((file) => [file.name, file.title, file.prettyType, file.filetype]),
   ]
     .join("\n")
@@ -372,15 +585,44 @@ function formatBytes(size: number): string {
   return `${megabytes >= 10 ? Math.round(megabytes) : megabytes.toFixed(1)} MB`;
 }
 
-function fileIcon(file: SlackFile) {
-  const kind = `${file.filetype} ${file.mimetype} ${file.prettyType}`.toLowerCase();
-  if (file.kind === "image" || kind.includes("image")) return ImageIcon;
+function fileKind(file: SlackFile): string {
+  return `${file.filetype} ${file.mimetype} ${file.prettyType}`.toLowerCase();
+}
+
+function isPlayable(file: SlackFile): boolean {
+  const kind = fileKind(file);
+  return kind.includes("video") || kind.includes("audio") || kind.includes("mp4") || kind.includes("mov") || kind.includes("mp3");
+}
+
+function FileGlyph({ file, className }: { file: SlackFile; className?: string }) {
+  const Icon = fileIcon(file);
+  return <Icon className={className} aria-hidden="true" />;
+}
+
+function fileTone(file: SlackFile): string {
+  const kind = fileKind(file);
+  if (file.kind === "image" || kind.includes("image")) return "bg-primary/10 text-primary";
+  if (kind.includes("pdf")) return "bg-rose-500/10 text-rose-700 dark:text-rose-300";
   if (kind.includes("sheet") || kind.includes("csv") || kind.includes("excel") || kind.includes("xls")) {
-    return FileSpreadsheetIcon;
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
+  if (kind.includes("zip") || kind.includes("archive") || kind.includes("gzip")) return "bg-amber-500/10 text-amber-800 dark:text-amber-300";
+  if (isPlayable(file)) return "bg-violet-500/10 text-violet-700 dark:text-violet-300";
+  if (kind.includes("text") || kind.includes("doc")) return "bg-sky-500/10 text-sky-800 dark:text-sky-300";
+  return "bg-muted text-primary";
+}
+
+function fileIcon(file: SlackFile) {
+  const kind = fileKind(file);
+  if (file.kind === "image" || kind.includes("image")) return ImageIcon;
+  if (kind.includes("sheet") || kind.includes("csv") || kind.includes("excel") || kind.includes("xls")) return FileSpreadsheetIcon;
   if (kind.includes("zip") || kind.includes("archive") || kind.includes("gzip")) return FileArchiveIcon;
   if (kind.includes("audio") || kind.includes("mp3") || kind.includes("m4a")) return FileAudioIcon;
   if (kind.includes("video") || kind.includes("mp4") || kind.includes("mov")) return FileVideoIcon;
   if (kind.includes("pdf") || kind.includes("text") || kind.includes("doc")) return FileTextIcon;
   return FileIcon;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

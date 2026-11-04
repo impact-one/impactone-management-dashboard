@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { SearchIcon, SearchXIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
@@ -93,11 +92,8 @@ export function ProjectsPage() {
                 <li key={project.id}>
                   <RecordCard
                     kicker={project.organisation}
-                    title={
-                      <Link className="hover:text-primary" to={`/projects/${project.id}`}>
-                        {project.name}
-                      </Link>
-                    }
+                    title={project.name}
+                    to={`/projects/${project.id}`}
                     origin={project.source.origin}
                     summary={project.summary}
                     mark={<MarkIcon name={project.name} />}

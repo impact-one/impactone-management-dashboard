@@ -230,28 +230,53 @@ export function CardsSkeleton({ label, count = 6 }: { label: string; count?: num
 /** Project detail */
 export function DetailSkeleton({ label = "Loading project" }: { label?: string }) {
   return (
-    <div className="grid gap-6" role="status" aria-label={label}>
-      <Block className="h-3 w-40" />
-      <div className="space-y-3 border-b pb-5">
-        <Block className="h-3 w-24" />
-        <Block className="h-8 w-72" />
-        <Block className="h-4 w-full max-w-2xl" />
-        <Block className="h-4 w-[80%] max-w-xl" />
-      </div>
-      <div>
-        <Block className="mb-3 h-4 w-28" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
-              <Block className="mb-2 h-4 w-[70%]" />
-              <Block className="h-3 w-full" />
-            </div>
-          ))}
+    <div className="grid gap-4" role="status" aria-label={label}>
+      <Block className="h-4 w-48" />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 space-y-3">
+          <Block className="h-8 w-72 max-w-full" />
+          <Block className="h-4 w-56" />
+          <Block className="h-4 w-full max-w-xl" />
+        </div>
+        <div className="flex gap-2">
+          <Block className="h-9 w-24 rounded-full" />
+          <Block className="h-9 w-28 rounded-full" />
         </div>
       </div>
-      <div>
-        <Block className="mb-3 h-4 w-20" />
-        <TableSkeleton columns={5} rows={4} />
+      <Block className="h-12 w-full rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="surface rounded-2xl bg-card p-4 ring-0">
+            <Block className="mb-3 h-3 w-20" />
+            <Block className="h-7 w-24" />
+            <Block className="mt-3 h-1.5 w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-3 overflow-hidden border-b pb-3">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Block key={i} className="h-4 w-24 shrink-0" />
+        ))}
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {Array.from({ length: 2 }, (_, column) => (
+          <div key={column} className="grid gap-4">
+            {Array.from({ length: 2 }, (_, card) => (
+              <div key={card} className="surface rounded-2xl bg-card p-4 ring-0">
+                <Block className="mb-3 h-4 w-28" />
+                {Array.from({ length: 3 }, (_, row) => (
+                  <div key={row} className="flex items-center justify-between gap-3 border-b py-3 last:border-b-0">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Block className="h-4 w-[70%]" />
+                      <Block className="h-3 w-[40%]" />
+                    </div>
+                    <Block className="h-5 w-20 shrink-0 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );

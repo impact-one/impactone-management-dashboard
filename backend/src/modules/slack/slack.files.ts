@@ -1,6 +1,6 @@
 import type { SlackFile, SlackMessage } from "../../types/domain.js";
 
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+const IMAGE_TYPES = new Set(["image/jpeg", "image/jpg", "image/pjpeg", "image/png", "image/gif", "image/webp"]);
 const IMAGE_FILETYPES = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
 
 const SKIP_SUBTYPES = new Set([
@@ -123,7 +123,7 @@ function filesFrom(row: Record<string, unknown>): { publicFiles: SlackFile[]; pr
     const title = text(file.title) || name;
     const mimetype = text(file.mimetype).toLowerCase();
     const filetype = text(file.filetype).toLowerCase();
-    const image = IMAGE_TYPES.has(mimetype) || (!mimetype && IMAGE_FILETYPES.has(filetype));
+    const image = IMAGE_TYPES.has(mimetype) || IMAGE_FILETYPES.has(filetype);
     const preview = previewUrl(file, image);
     publicFiles.push({
       id,

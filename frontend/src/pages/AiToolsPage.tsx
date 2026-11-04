@@ -97,7 +97,7 @@ export function AiToolsPage() {
       const haystack = `${tool.name} ${tool.purpose} ${tool.owner}`.toLowerCase();
       if (query && !haystack.includes(query.toLowerCase())) return false;
       if (origin !== "all" && tool.source.origin !== origin) return false;
-      if (needsReview && tool.reviewFlags.length === 0 && tool.source.origin !== "needs-review") return false;
+      if (needsReview && tool.source.origin !== "needs-review") return false;
       return true;
     });
   }, [tools, query, origin, needsReview]);

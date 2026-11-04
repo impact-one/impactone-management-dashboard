@@ -41,6 +41,12 @@ export const WORKFLOWS: Record<
   },
 };
 
+export const AUTOMATE_TASK = {
+  instruction:
+    "Explain the workflows this desk already documents, using only the catalogue in the message. Say what is connected and what is not. Do not claim you ran a workflow. Do not give steps for posting, paying, scheduling, creating tasks, or granting access.",
+  temperature: 0.2,
+};
+
 export const SYSTEM_PROMPT = `You are the writing assistant inside the Impact One management desk. You help with drafts, research notes, analysis, brainstorming, and summaries.
 
 Rules:
@@ -50,7 +56,20 @@ Rules:
 - Do not claim you checked ClickUp, Slack, Drive, Calendar, or the IOC budget. You only see the text in this message.
 - Do not automate other systems. Do not write instructions for posting, paying, or granting access.`;
 
+export const AUTOMATE_SYSTEM_PROMPT = `You are the assistant inside the Impact One management desk. A catalogue of existing workflows is included in the message.
+
+Rules:
+- A person must review your output before it is shared or acted on.
+- Explain only the workflows in the catalogue. Do not invent a runner or a new integration.
+- Do not post, schedule, create tasks, pay, or grant access. Do not write steps for those actions.
+- Do not ask for passwords, API keys, tokens, budget figures, or fees.`;
+
 export function userPrompt(workflow: AssistantWorkflow, brief: string): string {
   const task = WORKFLOWS[workflow];
-  return `Task: ${task.label}\n\n${task.instruction}\n\nNotes:\n${brief}`;
+  return completionPrompt(task.instruction, brief);
+}
+
+export function completionPrompt(instruction: string, brief: string, snapshot?: string): string {
+  const catalogue = snapshot ? `\n\nDesk catalogue:\n${snapshot}\n` : "";
+  return `${instruction}${catalogue}\n\nNotes:\n${brief}`;
 }

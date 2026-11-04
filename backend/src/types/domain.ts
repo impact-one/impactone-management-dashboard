@@ -387,6 +387,8 @@ export interface SlackDesk {
 
 export type AssistantWorkflow = "draft" | "research" | "analyze" | "brainstorm" | "summarize";
 
+export type AssistantIntent = "draft" | "research" | "analyze" | "brainstorm" | "automate" | "overview";
+
 export interface AssistantDesk {
   connected: boolean;
   canRun: boolean;
@@ -400,11 +402,13 @@ export interface AssistantDesk {
 }
 
 export interface AssistantRun {
-  workflow: AssistantWorkflow;
-  model: string;
+  workflow: AssistantIntent;
+  intent: AssistantIntent;
+  intentLabel: string;
+  model: string | null;
   output: string;
   reviewNote: string;
-  origin: "live";
+  origin: "live" | "sample";
 }
 
 export type ClaudeWorkflow = "write" | "review" | "synthesize" | "code";

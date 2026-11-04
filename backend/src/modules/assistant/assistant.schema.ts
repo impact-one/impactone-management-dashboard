@@ -4,7 +4,7 @@ import { AppError } from "../../lib/AppError.js";
 export const assistantWorkflows = ["draft", "research", "analyze", "brainstorm", "summarize"] as const;
 
 export const runSchema = z.object({
-  workflow: z.enum(assistantWorkflows, { message: "Choose draft, research, analyze, brainstorm, or summarize." }),
+  workflow: z.string().optional(),
   brief: z
     .string()
     .trim()

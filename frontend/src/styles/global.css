@@ -244,6 +244,16 @@
   outline-offset: -1px;
 }
 
+/* Native date and time fields have a large min-content size that overflows narrow forms. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
 .no-scrollbar {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;

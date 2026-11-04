@@ -74,9 +74,29 @@ export const driveClient = {
 
   createFile,
   getFile,
+  downloadFile,
   upsertShare,
   removeShare,
 };
+
+const PRESENTATION = "application/vnd.google-apps.presentation";
+const DRAWING = "application/vnd.google-apps.drawing";
+const PDF = "application/pdf";
+const SHEET = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export function exportForMime(mime: string): { mime: string; ext: string } | null {
+  if (mime === DOCUMENT || mime === PRESENTATION || mime === DRAWING) return { mime: PDF, ext: ".pdf" };
+  if (mime === SPREADSHEET) return { mime: SHEET, ext: ".xlsx" };
+  return null;
+}
+
+export function downloadFilename(title: string, extension: string) {
+  const cleaned = title.replace(/[^\w.\- ()[\]]+/g, "_").replace(/[\r\n"]/g, "").slice(0, 160).trim() || "document";
+  if (!extension) return cleaned;
+  if (cleaned.toLowerCase().endsWith(extension.toLowerCase())) return cleaned;
+  const stem = cleaned.replace(/\.[^.]+$/, "").trim() || "document";
+  return `${stem}${extension}`;
+}
 
 async function google(path: string, init: RequestInit = {}): Promise<unknown> {
   const token = env.googleAccessToken;
@@ -107,6 +127,66 @@ async function google(path: string, init: RequestInit = {}): Promise<unknown> {
     throw new AppError(502, message ? `Google Drive: ${message}` : `Google Drive returned ${response.status}.`);
   }
   return payload;
+}
+
+async function googleRaw(path: string): Promise<{ body: Buffer; contentType: string }> {
+  const token = env.googleAccessToken;
+  if (!token) throw new AppError(503, "Google access token is not set.");
+  const response = await fetch(`${API}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(20000),
+  });
+  const body = Buffer.from(await response.arrayBuffer());
+  if (!response.ok) {
+    let message = "";
+    try {
+      const payload = JSON.parse(body.toString("utf8")) as { error?: { message?: unknown } };
+      message = textOf(payload.error?.message);
+    } catch {
+      message = "";
+    }
+    throw new AppError(502, message ? `Google Drive: ${message}` : `Google Drive returned ${response.status}.`);
+  }
+  const header = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
+  const contentType =
+    header === "text/html" || header === "application/xhtml+xml" || header === "image/svg+xml" || !header
+      ? "application/octet-stream"
+      : header;
+  return { body, contentType };
+}
+
+async function downloadFile(fileId: string) {
+  const params = new URLSearchParams({
+    supportsAllDrives: "true",
+    fields: "id,name,mimeType",
+  });
+  const payload = await google(`/files/${encodeURIComponent(fileId)}?${params.toString()}`);
+  const row = record(payload);
+  const name = textOf(row.name) || "Untitled";
+  const mime = textOf(row.mimeType);
+  if (mime === FOLDER) throw new AppError(400, "Folders cannot be downloaded.");
+  const exported = exportForMime(mime);
+  if (exported) {
+    const file = await googleRaw(
+      `/files/${encodeURIComponent(fileId)}/export?${new URLSearchParams({ mimeType: exported.mime }).toString()}`,
+    );
+    return {
+      body: file.body,
+      filename: downloadFilename(name, exported.ext),
+      contentType: exported.mime,
+    };
+  }
+  if (mime.startsWith("application/vnd.google-apps.")) {
+    throw new AppError(400, "That Drive item cannot be downloaded.");
+  }
+  const file = await googleRaw(
+    `/files/${encodeURIComponent(fileId)}?${new URLSearchParams({ alt: "media", supportsAllDrives: "true" }).toString()}`,
+  );
+  return {
+    body: file.body,
+    filename: downloadFilename(name, ""),
+    contentType: file.contentType,
+  };
 }
 
 async function listFiles(): Promise<DriveFile[]> {

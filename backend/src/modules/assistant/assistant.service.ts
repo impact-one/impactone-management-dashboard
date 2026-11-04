@@ -2,12 +2,15 @@ import { AppError } from "../../lib/AppError.js";
 import { isStaff } from "../../lib/permissions.js";
 import type { AssistantDesk, AssistantRun, PublicUser } from "../../types/domain.js";
 import { assistantClient } from "./assistant.client.js";
+import { answerLookup, formatAutomations, refusalAnswer } from "./assistant.desk.js";
 import { findConfidential } from "./assistant.guard.js";
-import { WORKFLOWS } from "./assistant.prompts.js";
+import { INTENT_LABEL, classifyIntent, intentFromModel, type ClassifiedIntent } from "./assistant.intent.js";
+import { AUTOMATE_TASK, WORKFLOWS } from "./assistant.prompts.js";
 import { parseBody, runSchema } from "./assistant.schema.js";
 
-const REVIEW_NOTE =
+const MODEL_REVIEW =
   "Review this output before you share it or act on it. It was sent to OpenAI and is not stored on this desk.";
+const DESK_REVIEW = "Review this before you share it. It was read from the desk and was not sent to a model.";
 
 export class AssistantService {
   async desk(user: PublicUser): Promise<{ desk: AssistantDesk; note: string }> {
@@ -18,30 +21,26 @@ export class AssistantService {
     if (!staff) {
       note = "ChatGPT runs are limited to executive and manager roles.";
     } else if (!live.configured) {
-      note = "ChatGPT is not connected. Add OPENAI_API_KEY on the API, then restart it.";
+      note = "Desk questions still work. Drafting needs OPENAI_API_KEY on the API.";
     } else if (!live.ok) {
-      note = live.message;
+      note = `${live.message} Desk questions still work.`;
     } else {
-      note = "Review every output. Do not paste tokens, passwords, fees, or live budget figures.";
+      note = "Ask about a message, a meeting, or the desk. Review every draft. Do not paste tokens, passwords, fees, or live budget figures.";
     }
     const desk: AssistantDesk = {
       connected,
-      canRun: staff && live.ok,
+      canRun: staff,
       model: live.data?.model ?? null,
       provider: "ChatGPT",
-      bestFit: "Writing, analysis, summaries",
-      implementationNote: "Review outputs and protect confidential information.",
+      bestFit: "Desk questions, writing, and analysis",
+      implementationNote: "The desk chooses the task. Review outputs and protect confidential information.",
       operatingModel:
-        "Staff can draft, research, analyze, brainstorm, and summarize. Only the note in the form is sent to OpenAI. This desk does not attach budgets, documents, or tokens, and it does not store the note or the reply.",
-      workflows: (Object.keys(WORKFLOWS) as (keyof typeof WORKFLOWS)[]).map((id) => ({
-        id,
-        label: WORKFLOWS[id].label,
-        hint: WORKFLOWS[id].hint,
-      })),
+        "Staff can ask about Slack, ClickUp, the calendar, and the rest of the desk, or paste notes to draft, research, analyze, or brainstorm. The chat does not post, book, or store the reply.",
+      workflows: [],
       safeguards: [
         "Review the reply before it is shared or treated as a decision.",
         "Do not paste API keys, passwords, fees, or live budget lines.",
-        "The desk does not send ClickUp, Drive, Calendar, Slack, or budget data on its own.",
+        "The chat can read Slack, ClickUp, Calendar, and the desk lists. It does not post, book, or change them.",
         "Notes and replies are not saved on this desk.",
       ],
     };
@@ -55,21 +54,84 @@ export class AssistantService {
     const input = parseBody(runSchema, body);
     const blocked = findConfidential(input.brief);
     if (blocked) throw new AppError(400, blocked);
-    const live = await assistantClient.status();
-    if (!live.configured) {
-      throw new AppError(503, "OpenAI API key is not set.");
+
+    const classified = await this.resolveIntent(input.brief);
+    if (classified.refuseWrite) {
+      const refused = refusalAnswer();
+      return this.deskRun("automate", refused.text, refused.origin);
     }
-    if (!live.ok) {
-      throw new AppError(503, live.message);
+    if (classified.intent === "overview" && classified.lookup) {
+      const answer = await answerLookup(user, classified.lookup);
+      return this.deskRun("overview", answer.text, answer.origin);
     }
-    const result = await assistantClient.complete(input.workflow, input.brief);
+    if (classified.intent === "automate") {
+      const result = await this.requireModel();
+      const written = await assistantClient.complete({
+        instruction: AUTOMATE_TASK.instruction,
+        temperature: AUTOMATE_TASK.temperature,
+        brief: input.brief,
+        snapshot: formatAutomations(),
+        automate: true,
+      });
+      return {
+        workflow: "automate",
+        intent: "automate",
+        intentLabel: INTENT_LABEL.automate,
+        model: written.model || result.model,
+        output: written.output,
+        reviewNote: MODEL_REVIEW,
+        origin: "live",
+      };
+    }
+
+    const writing = classified.writing ?? "draft";
+    const task = WORKFLOWS[writing];
+    await this.requireModel();
+    const written = await assistantClient.complete({
+      instruction: task.instruction,
+      temperature: task.temperature,
+      brief: input.brief,
+    });
     return {
-      workflow: input.workflow,
-      model: result.model,
-      output: result.output,
-      reviewNote: REVIEW_NOTE,
+      workflow: classified.intent,
+      intent: classified.intent,
+      intentLabel: INTENT_LABEL[classified.intent],
+      model: written.model,
+      output: written.output,
+      reviewNote: MODEL_REVIEW,
       origin: "live",
     };
+  }
+
+  private deskRun(intent: "overview" | "automate", output: string, origin: "live" | "sample"): AssistantRun {
+    return {
+      workflow: intent,
+      intent,
+      intentLabel: INTENT_LABEL[intent],
+      model: null,
+      output,
+      reviewNote: DESK_REVIEW,
+      origin,
+    };
+  }
+
+  private async requireModel() {
+    const live = await assistantClient.status();
+    if (!live.configured) throw new AppError(503, "OpenAI API key is not set.");
+    if (!live.ok || !live.data) throw new AppError(503, live.message);
+    return live.data;
+  }
+
+  private async resolveIntent(brief: string): Promise<ClassifiedIntent> {
+    const ruled = classifyIntent(brief);
+    if (ruled) return ruled;
+    try {
+      await this.requireModel();
+      const word = await assistantClient.classify(brief);
+      return intentFromModel(word);
+    } catch {
+      return { intent: "draft", writing: "draft" };
+    }
   }
 }
 

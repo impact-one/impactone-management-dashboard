@@ -870,10 +870,10 @@ export const aiTools: AiTool[] = [
     id: "ai-chatgpt",
     name: "ChatGPT",
     kind: "tool",
-    purpose: "Draft, research, analyze, brainstorm, and summarize. Best fit is writing, analysis, and summaries.",
+    purpose: "Asks about Slack, ClickUp, and the calendar, and drafts, researches, analyzes, or brainstorms from a note.",
     owner: "Kulde (tracker)",
     connections:
-      "Assistant desk in this dashboard. Only the note a staff member types is sent to OpenAI. Budgets, documents, and tokens are not attached.",
+      "Assistant desk in this dashboard. Desk questions read Slack, ClickUp, and Calendar. A draft sends only the note to OpenAI.",
     source: {
       origin: "documented",
       system: "Client requirement 01 / 09",
@@ -1078,13 +1078,13 @@ export const catalogTools: CatalogTool[] = [
     name: "ChatGPT",
     area: "AI assistant",
     owner: "Kulde",
-    purpose: "Draft, research, analyze, brainstorm, and summarize. Best fit: writing, analysis, and summaries.",
+    purpose: "Asks about the desk, and drafts, researches, analyzes, or brainstorms. Best fit: writing and desk questions.",
     source: {
       origin: "documented",
       system: "Client requirement 01 / 09",
-      detail: "Assistant desk calls the OpenAI API when OPENAI_API_KEY is set. Review outputs. Do not send confidential information.",
+      detail: "Assistant desk reads the desk for factual questions and calls OpenAI for writing when OPENAI_API_KEY is set.",
     },
-    reviewFlags: ["Review outputs before sharing.", "An OpenAI API key is required before replies are live."],
+    reviewFlags: ["Review outputs before sharing."],
   },
   {
     id: "tool-claude",

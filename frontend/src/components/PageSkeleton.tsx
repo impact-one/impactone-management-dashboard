@@ -169,36 +169,73 @@ export function DeskSkeleton({ label, rows = 5 }: { label: string; rows?: number
   );
 }
 
-/** Slack — composer + message feed */
+/** Slack — note, metric strip, composer, and message feed */
 export function SlackSkeleton({ label = "Loading Slack" }: { label?: string }) {
   return (
-    <div className="grid gap-6" role="status" aria-label={label}>
-      <Block className="h-4 w-56" />
-      <div>
-        <Block className="mb-3 h-4 w-24" />
-        <div className="grid max-w-2xl gap-3">
-          <Block className="h-3 w-16" />
-          <Block className="h-24 w-full rounded-lg" />
-          <Block className="h-9 w-32" />
-        </div>
+    <div role="status" aria-label={label}>
+      <div className="mb-5 flex items-center gap-3 rounded-xl border border-primary/15 bg-accent/40 px-4 py-3 sm:mb-6">
+        <div className="size-4 shrink-0 animate-pulse rounded-full bg-primary/25" />
+        <div className="h-4 max-w-md flex-1 animate-pulse rounded-md bg-primary/15" />
       </div>
-      <div>
-        <Block className="mb-3 h-4 w-36" />
-        <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-3.5">
-            <Block className="h-4 w-32" />
-            <Block className="h-9 w-56" />
-          </div>
-          {Array.from({ length: 4 }, (_, row) => (
-            <div key={row} className="flex gap-3 border-b px-4 py-3.5 last:border-b-0">
-              <Block className="size-8 rounded-full" />
-              <div className="grid flex-1 gap-2">
-                <Block className="h-3 w-40" />
-                <Block className="h-4 w-[80%]" />
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="surface flex h-full flex-col rounded-2xl bg-card px-3.5 py-3.5 ring-0">
+              <div className="flex items-center justify-between gap-2">
+                <Block className="h-3 w-16" />
+                <Block className="size-7 rounded-md" />
               </div>
+              <Block className="mt-3 h-6 w-16" />
+              {i === 3 ? <Block className="mt-2 h-3 w-14" /> : null}
             </div>
           ))}
         </div>
+        <div className="h-4 w-72 max-w-full animate-pulse rounded-md bg-foreground/10" />
+        <section className="mt-9">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-4 w-24 animate-pulse rounded-md bg-foreground/10" />
+            <div className="h-px flex-1 bg-gradient-to-r from-border via-border/70 to-transparent" />
+          </div>
+          <div className="surface grid max-w-2xl gap-3 rounded-2xl bg-card p-5 ring-0">
+            <Block className="h-3.5 w-16" />
+            <Block className="h-24 w-full rounded-xl" />
+            <Block className="h-9 w-32 rounded-lg" />
+          </div>
+        </section>
+        <section className="mt-9">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-4 w-36 animate-pulse rounded-md bg-foreground/10" />
+            <div className="h-px flex-1 bg-gradient-to-r from-border via-border/70 to-transparent" />
+          </div>
+          <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
+            <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3.5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2">
+                  <Block className="h-4 w-32" />
+                  <Block className="h-3 w-28" />
+                </div>
+                <div className="grid w-full gap-1.5 sm:max-w-sm">
+                  <Block className="h-3 w-14" />
+                  <Block className="h-10 w-full rounded-lg" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Block className="h-8 w-14 rounded-full" />
+                <Block className="h-8 w-16 rounded-full" />
+                <Block className="h-8 w-20 rounded-full" />
+              </div>
+            </div>
+            {Array.from({ length: 4 }, (_, row) => (
+              <div key={row} className="flex gap-3 border-b border-border/60 px-4 py-3.5 last:border-b-0">
+                <Block className="size-8 shrink-0 rounded-full" />
+                <div className="grid min-w-0 flex-1 gap-2">
+                  <Block className="h-3 w-40" />
+                  <Block className="h-4 w-[80%]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

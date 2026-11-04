@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDaysIcon, ChevronDownIcon, ClockIcon, PlusIcon, Share2Icon, UserRoundIcon } from "lucide-react";
+import {
+  AppWindowIcon,
+  BellIcon,
+  CalendarDaysIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  MailIcon,
+  PlusIcon,
+  Share2Icon,
+  UserRoundIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "../components/EmptyState";
@@ -20,7 +32,7 @@ import type {
 } from "../types";
 
 const fieldClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-8 w-full min-w-0 max-w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function CalendarPage() {
   const { data, error, loading, reload } = useApi<Envelope<CalendarDesk>>("/calendar/desk");
@@ -59,9 +71,21 @@ export function CalendarPage() {
         }
       >
         {desk?.canSchedule ? (
-          <Button type="button" onClick={() => setBooking((open) => !open)}>
-            <PlusIcon data-icon="inline-start" />
-            {booking ? "Close form" : "Book a meeting"}
+          <Button
+            type="button"
+            size={booking ? "icon" : "default"}
+            className={booking ? undefined : "w-full sm:w-auto"}
+            aria-label={booking ? "Close form" : undefined}
+            onClick={() => setBooking((open) => !open)}
+          >
+            {booking ? (
+              <XIcon />
+            ) : (
+              <>
+                <PlusIcon data-icon="inline-start" />
+                Book a meeting
+              </>
+            )}
           </Button>
         ) : null}
       </PageHeader>
@@ -71,7 +95,7 @@ export function CalendarPage() {
       {saved ? <Note>{saved}</Note> : null}
       {formError ? <ErrorNote message={formError} /> : null}
       {desk ? (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <MetricStrip
             items={[
               {
@@ -109,7 +133,15 @@ export function CalendarPage() {
             />
           ) : null}
 
-          <Section title="Schedule">
+          <section className="mt-9" aria-labelledby="schedule-heading">
+            <div className="mb-4 flex items-center gap-2.5">
+              <h2 id="schedule-heading" className="text-[15px] font-semibold tracking-tight text-foreground">
+                Schedule
+              </h2>
+              <span className="inline-flex h-6 items-center rounded-full bg-muted px-2.5 text-xs font-medium text-muted-foreground">
+                {countPhrase(meetings.length, "event")}
+              </span>
+            </div>
             {meetings.length === 0 ? (
               <EmptyState
                 title="Nothing on the agenda"
@@ -123,60 +155,17 @@ export function CalendarPage() {
               <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
                 {grouped.map(([day, rows]) => (
                   <div key={day} className="border-b border-border/60 last:border-b-0">
-                    <h3 className="bg-muted/40 px-5 py-2.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                      {dayHeading(day)}
-                    </h3>
+                    <DayHeader day={day} count={rows.length} />
                     <ul className="list-none p-0">
                       {rows.map((row) => (
-                        <li
-                          key={row.id}
-                          className="grid gap-3 border-b border-border/60 px-4 py-4 last:border-b-0 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-6 sm:px-5"
-                        >
-                          <div className="sm:pt-0.5">
-                            <p className="text-sm font-semibold tabular-nums text-foreground">{row.timeLabel}</p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">{row.timeZone}</p>
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              {row.href ? (
-                                <a
-                                  href={row.href}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                >
-                                  {row.title}
-                                </a>
-                              ) : (
-                                <p className="text-sm font-medium">{row.title}</p>
-                              )}
-                              <SourceBadge origin={row.source.origin} />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {row.calendarName}
-                              {row.location ? ` · ${row.location}` : ""}
-                            </p>
-                            <dl className="mt-3 grid gap-1.5 text-sm">
-                              <div className="grid gap-0.5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-3">
-                                <dt className="text-xs font-medium text-muted-foreground">Guests</dt>
-                                <dd className="text-sm text-foreground">{guestSummary(row)}</dd>
-                              </div>
-                              <div className="grid gap-0.5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-3">
-                                <dt className="text-xs font-medium text-muted-foreground">Reminders</dt>
-                                <dd className="text-sm text-foreground">
-                                  {row.reminders.length > 0 ? row.reminders.map(reminderLabel).join(" · ") : "None set"}
-                                </dd>
-                              </div>
-                            </dl>
-                          </div>
-                        </li>
+                        <ScheduleEvent key={row.id} meeting={row} />
                       ))}
                     </ul>
                   </div>
                 ))}
               </div>
             )}
-          </Section>
+          </section>
 
           <Section title="Calendars">
             <ul className="grid list-none gap-4 p-0">
@@ -241,7 +230,7 @@ export function CalendarPage() {
               <p className="mb-4 max-w-2xl text-sm leading-6 text-muted-foreground">
                 Check who is free before you book, or change the guests on a meeting that is already on the calendar.
               </p>
-              <div className="grid gap-4">
+              <div className="grid min-w-0 gap-4">
                 <AvailabilityForm
                   fallbackZone={desk.timeZone}
                   result={availabilityNote}
@@ -316,16 +305,21 @@ function ScheduleForm({
   }
 
   return (
-    <form className="surface rounded-2xl bg-card p-4 ring-0 sm:p-5" onSubmit={submit}>
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold tracking-tight">Book a meeting</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Name it, pick a time, and add the people who should get the invite.</p>
+    <form className="surface min-w-0 rounded-2xl bg-card p-4 ring-0 sm:p-5" onSubmit={submit}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">Book a meeting</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Name it, pick a time, and add the people who should get the invite.</p>
+        </div>
+        <Button type="button" variant="outline" size="icon" aria-label="Close form" onClick={onCancel}>
+          <XIcon />
+        </Button>
       </div>
       <div className="grid gap-4">
         <Field label="Meeting name">
           <Input name="title" required maxLength={140} placeholder="Weekly planning" />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] gap-3">
           <Field label="Date">
             <Input name="date" type="date" required />
           </Field>
@@ -336,7 +330,7 @@ function ScheduleForm({
             <Input name="endTime" type="time" required />
           </Field>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3">
           <Field label="Calendar">
             <select
               className={fieldClass}
@@ -421,14 +415,14 @@ function AvailabilityForm({
   }
 
   return (
-    <form className="surface rounded-2xl bg-card p-4 ring-0" onSubmit={submit}>
+    <form className="surface min-w-0 rounded-2xl bg-card p-4 ring-0" onSubmit={submit}>
       <h3 className="text-sm font-medium">Who is free?</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">Enter the people and the time you have in mind.</p>
       <div className="mt-3 grid gap-3">
         <Field label="People">
           <Input name="emails" required placeholder="saray@impactone.example, kulde@impactone.example" />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9.5rem),1fr))] gap-3">
           <Field label="Date">
             <Input name="date" type="date" required />
           </Field>
@@ -492,6 +486,34 @@ function ShareForm({ onSubmit }: { onSubmit: (email: string, role: CalendarAcces
   );
 }
 
+const replySelectClass =
+  "h-9 w-full min-w-0 appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+function ReplySelect({
+  person,
+  onChange,
+}: {
+  person: MeetingInvitation;
+  onChange: (value: InvitationResponse) => void;
+}) {
+  return (
+    <span className="relative block min-w-0">
+      <select
+        className={replySelectClass}
+        value={person.response}
+        aria-label={`Reply from ${person.email}`}
+        onChange={(event) => onChange(event.target.value as InvitationResponse)}
+      >
+        <option value="needsAction">No reply</option>
+        <option value="accepted">Accepted</option>
+        <option value="tentative">Maybe</option>
+        <option value="declined">Declined</option>
+      </select>
+      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+    </span>
+  );
+}
+
 function InvitationEditor({
   meetings,
   onSubmit,
@@ -518,22 +540,34 @@ function InvitationEditor({
 
   if (meetings.length === 0) return null;
 
+  function setResponse(address: string, response: InvitationResponse) {
+    setRows((current) => current.map((row) => (row.email === address ? { ...row, response } : row)));
+  }
+
+  function setOptional(address: string, optional: boolean) {
+    setRows((current) => current.map((row) => (row.email === address ? { ...row, optional } : row)));
+  }
+
+  function removeGuest(address: string) {
+    setRows((current) => current.filter((row) => row.email !== address));
+  }
+
   return (
-    <div className="surface rounded-2xl bg-card p-4 ring-0 sm:p-5">
+    <div className="@container surface min-w-0 rounded-2xl bg-card p-4 ring-0 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
           <UserRoundIcon className="size-4" />
         </span>
-        <div>
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">Guests on a meeting</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">Add someone, mark them optional, or record their reply.</p>
         </div>
       </div>
       <label className="mt-4 grid gap-1.5 text-sm">
         <span className="font-medium">Meeting</span>
-        <span className="relative block">
+        <span className="relative block min-w-0">
           <select
-            className="h-10 w-full appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             value={meetingId}
             onChange={(event) => choose(event.target.value)}
           >
@@ -546,7 +580,43 @@ function InvitationEditor({
           <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         </span>
       </label>
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border/70">
+      <ul className="mt-4 grid list-none gap-2 p-0 @min-[42rem]:hidden">
+        {rows.length === 0 ? (
+          <li className="rounded-xl border border-border/70 px-3 py-3 text-sm text-muted-foreground">No guests yet.</li>
+        ) : (
+          rows.map((person) => (
+            <li key={person.email} className="min-w-0 rounded-xl border border-border/70 p-3">
+              <p className="truncate text-sm font-medium text-foreground">{person.name || person.email}</p>
+              {person.name ? <p className="truncate text-xs text-muted-foreground">{person.email}</p> : null}
+              <label className="mt-3 grid gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Response</span>
+                <ReplySelect person={person} onChange={(response) => setResponse(person.email, response)} />
+              </label>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={person.optional}
+                    aria-label={`Optional guest ${person.email}`}
+                    onChange={(event) => setOptional(person.email, event.target.checked)}
+                  />
+                  Optional
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-8 px-2 text-muted-foreground"
+                  onClick={() => removeGuest(person.email)}
+                >
+                  Remove
+                </Button>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+      <div className="mt-4 hidden min-w-0 overflow-x-auto rounded-xl border border-border/70 @min-[42rem]:block">
         <table className="w-full min-w-[36rem] border-collapse text-sm">
           <thead>
             <tr className="bg-muted/70 text-left text-xs font-medium text-muted-foreground">
@@ -568,25 +638,8 @@ function InvitationEditor({
                 <tr key={person.email} className="border-t border-border/70">
                   <td className="px-3 py-2.5 text-foreground">{person.name || person.email}</td>
                   <td className="px-3 py-2.5">
-                    <span className="relative block max-w-[11rem]">
-                      <select
-                        className="h-9 w-full appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                        value={person.response}
-                        aria-label={`Reply from ${person.email}`}
-                        onChange={(event) =>
-                          setRows((current) =>
-                            current.map((row) =>
-                              row.email === person.email ? { ...row, response: event.target.value as InvitationResponse } : row,
-                            ),
-                          )
-                        }
-                      >
-                        <option value="needsAction">No reply</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="tentative">Maybe</option>
-                        <option value="declined">Declined</option>
-                      </select>
-                      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <span className="block max-w-[11rem]">
+                      <ReplySelect person={person} onChange={(response) => setResponse(person.email, response)} />
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-center">
@@ -595,11 +648,7 @@ function InvitationEditor({
                       className="size-4 accent-primary"
                       checked={person.optional}
                       aria-label={`Optional guest ${person.email}`}
-                      onChange={(event) =>
-                        setRows((current) =>
-                          current.map((row) => (row.email === person.email ? { ...row, optional: event.target.checked } : row)),
-                        )
-                      }
+                      onChange={(event) => setOptional(person.email, event.target.checked)}
                     />
                   </td>
                   <td className="px-3 py-2.5 text-right">
@@ -607,7 +656,7 @@ function InvitationEditor({
                       type="button"
                       variant="ghost"
                       className="h-8 px-2 text-muted-foreground"
-                      onClick={() => setRows((current) => current.filter((row) => row.email !== person.email))}
+                      onClick={() => removeGuest(person.email)}
                     >
                       Remove
                     </Button>
@@ -619,7 +668,7 @@ function InvitationEditor({
         </table>
       </div>
       <form
-        className="mt-3 flex flex-wrap items-center gap-2"
+        className="mt-3 flex flex-col gap-2 @min-[24rem]:flex-row @min-[24rem]:items-center"
         onSubmit={(event) => {
           event.preventDefault();
           const next = email.trim().toLowerCase();
@@ -634,13 +683,13 @@ function InvitationEditor({
           onChange={(event) => setEmail(event.target.value)}
           placeholder="Add an email"
           aria-label="Add guest"
-          className="h-10 w-full max-w-xs rounded-lg bg-background"
+          className="h-10 w-full min-w-0 rounded-lg bg-background @min-[24rem]:max-w-xs"
         />
-        <Button type="submit" variant="outline" className="h-10 rounded-lg bg-background px-4">
+        <Button type="submit" variant="outline" className="h-10 w-full rounded-lg bg-background px-4 @min-[24rem]:w-auto">
           Add guest
         </Button>
       </form>
-      <Button type="button" className="mt-3" onClick={() => onSubmit(meetingId, rows)}>
+      <Button type="button" className="mt-3 w-full sm:w-auto" onClick={() => onSubmit(meetingId, rows)}>
         Save guests
       </Button>
     </div>
@@ -681,6 +730,124 @@ async function checkAvailability(body: Record<string, unknown>) {
   return lines.join(" ");
 }
 
+function ScheduleEvent({ meeting }: { meeting: Meeting }) {
+  const duration = durationLabel(meeting);
+  const booked = Boolean(meeting.date);
+  const identity = booked ? meeting.ownerEmail || meeting.owner : meeting.calendarName;
+  const IdentityIcon = booked && (meeting.ownerEmail || meeting.owner) ? MailIcon : UsersIcon;
+
+  return (
+    <li className="@container relative border-b border-border/60 px-4 py-4 last:border-b-0 sm:px-5">
+      <span
+        className={`absolute inset-y-4 left-0 w-1 rounded-r-full ${accentClass(meeting.source.origin)}`}
+        aria-hidden="true"
+      />
+      <div className="grid gap-4 pl-3 @min-[40rem]:grid-cols-[11rem_minmax(0,1fr)] @min-[40rem]:items-start @min-[40rem]:gap-6">
+        <div className="flex min-w-0 gap-2">
+          <ClockIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm leading-5 font-semibold text-foreground">{meeting.timeLabel}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <span className="inline-flex max-w-full items-center rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <span className="truncate">{zoneLabel(meeting.timeZone)}</span>
+              </span>
+              {duration ? (
+                <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+                  {duration}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {meeting.href ? (
+              <a
+                href={meeting.href}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-semibold text-foreground underline-offset-4 hover:underline"
+              >
+                {meeting.title}
+              </a>
+            ) : (
+              <p className="text-sm font-semibold text-foreground">{meeting.title}</p>
+            )}
+            <SourceBadge origin={meeting.source.origin} />
+          </div>
+          {identity ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+              <IdentityIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">{identity}</span>
+              {meeting.location ? <span className="truncate text-muted-foreground">· {meeting.location}</span> : null}
+            </p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <UsersIcon className="size-3.5" aria-hidden="true" />
+              Guests
+            </span>
+            {meeting.invitations.length === 0 ? (
+              <span className="text-sm text-muted-foreground">No guests</span>
+            ) : (
+              meeting.invitations.map((person) => <GuestChip key={person.email} person={person} />)
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <BellIcon className="size-3.5" aria-hidden="true" />
+              Reminders
+            </span>
+            {meeting.reminders.length === 0 ? (
+              <span className="text-sm text-muted-foreground">None set</span>
+            ) : (
+              meeting.reminders.map((reminder, index) => (
+                <span
+                  key={`${reminder.method}-${reminder.minutesBefore}-${index}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-foreground"
+                >
+                  {reminder.method === "email" ? (
+                    <MailIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  ) : (
+                    <AppWindowIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  )}
+                  {reminderLabel(reminder)}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function DayHeader({ day, count }: { day: string; count: number }) {
+  const booked = day !== "undated";
+  return (
+    <div className="border-b border-border/60 bg-muted/40 px-4 py-3 sm:px-5">
+      <p className="text-sm font-semibold text-foreground">{dayHeading(day)}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {booked ? countPhrase(count, "event") : `${countPhrase(count, "event")} waiting for a date`}
+      </p>
+    </div>
+  );
+}
+
+function GuestChip({ person }: { person: MeetingInvitation }) {
+  const mark = person.email.trim().charAt(0).toUpperCase() || "•";
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted py-0.5 pr-2.5 pl-0.5 text-xs" title={person.name || undefined}>
+      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-card text-[10px] font-semibold text-foreground ring-1 ring-border">
+        {mark}
+      </span>
+      <span className="truncate text-foreground">{person.email}</span>
+      {person.optional ? <span className="text-muted-foreground">Optional</span> : null}
+      <span className={responseClass(person.response)}>{responseLabel(person.response)}</span>
+    </span>
+  );
+}
+
 function groupByDay(meetings: Meeting[]) {
   const map = new Map<string, Meeting[]>();
   for (const meeting of meetings) {
@@ -707,6 +874,42 @@ function dayHeading(value: string) {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function countPhrase(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function accentClass(origin: Meeting["source"]["origin"]) {
+  if (origin === "live") return "bg-[var(--origin-live-dot)]";
+  if (origin === "needs-review") return "bg-[var(--origin-review-dot)]";
+  if (origin === "documented") return "bg-[var(--origin-documented-dot)]";
+  return "bg-muted-foreground/35";
+}
+
+function zoneLabel(zone: string) {
+  if (!zone || zone === "UTC" || zone === "Etc/UTC" || zone === "Etc/GMT") return zone ? "UTC" : "Local";
+  return zone;
+}
+
+function durationLabel(meeting: Meeting) {
+  if (!meeting.startsAt?.includes("T") || !meeting.endsAt?.includes("T")) return null;
+  const start = Date.parse(meeting.startsAt);
+  const end = Date.parse(meeting.endsAt);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const total = Math.round((end - start) / 60000);
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+}
+
+function responseClass(response: InvitationResponse) {
+  if (response === "accepted") return "font-medium text-[var(--origin-live-fg)]";
+  if (response === "declined") return "font-medium text-[var(--origin-review-fg)]";
+  if (response === "tentative") return "font-medium text-[var(--origin-documented-fg)]";
+  return "text-muted-foreground";
 }
 
 function splitEmails(value: string) {
@@ -737,31 +940,21 @@ function roleLabel(role: CalendarAccess) {
 }
 
 function responseLabel(response: InvitationResponse) {
-  if (response === "accepted") return "accepted";
-  if (response === "declined") return "declined";
-  if (response === "tentative") return "maybe";
-  return "no reply";
-}
-
-function guestSummary(meeting: Meeting) {
-  if (meeting.invitations.length === 0) return "No guests";
-  return meeting.invitations
-    .map((person) => {
-      const name = person.name || person.email;
-      return person.optional ? `${name} (optional, ${responseLabel(person.response)})` : `${name} (${responseLabel(person.response)})`;
-    })
-    .join(", ");
+  if (response === "accepted") return "Accepted";
+  if (response === "declined") return "Declined";
+  if (response === "tentative") return "Maybe";
+  return "No reply";
 }
 
 function reminderLabel(reminder: Meeting["reminders"][number]) {
   const method = reminder.method === "email" ? "Email" : "Popup";
   if (reminder.minutesBefore % 1440 === 0 && reminder.minutesBefore >= 1440) {
     const days = reminder.minutesBefore / 1440;
-    return `${method} ${days} day${days === 1 ? "" : "s"} before`;
+    return `${method} · ${days} day${days === 1 ? "" : "s"} before`;
   }
   if (reminder.minutesBefore % 60 === 0 && reminder.minutesBefore >= 60) {
     const hours = reminder.minutesBefore / 60;
-    return `${method} ${hours} hour${hours === 1 ? "" : "s"} before`;
+    return `${method} · ${hours} hour${hours === 1 ? "" : "s"} before`;
   }
-  return `${method} ${reminder.minutesBefore} min before`;
+  return `${method} · ${reminder.minutesBefore} min before`;
 }

@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CircleCheckIcon,
   FileTextIcon,
+  FolderIcon,
   ListTodoIcon,
   LoaderCircleIcon,
   SearchIcon,
+  SquareCheckBigIcon,
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
@@ -23,7 +25,7 @@ type CardId = "all" | "progress" | "overdue" | "done";
 type DueFilter = "all" | "overdue" | "soon" | "later" | "none";
 
 const selectClass =
-  "border-input bg-card h-9 max-w-[14rem] rounded-full border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
+  "h-8 max-w-full rounded-full border border-border bg-card px-3 text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 const tableCols =
   "md:grid-cols-[minmax(9rem,1.3fr)_minmax(7rem,1fr)_7.5rem_5.5rem_7.5rem_7rem_6.5rem]";
@@ -391,6 +393,162 @@ function TaskBody({
 }
 
 type TaskGroup = { key: string; name: string; projectId: string | null; rows: Task[] };
+type BoardView = "project" | "all";
+
+function TaskTable({
+  title,
+  rows,
+  total,
+  shownId,
+  onOpen,
+}: {
+  title: string;
+  rows: Task[];
+  total: number;
+  shownId: string | null;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <section className="overflow-x-auto rounded-2xl bg-card ring-1 ring-border/70">
+      <h2 className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-3">
+        <span className="truncate text-sm font-semibold">{title}</span>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+          {rows.length}
+        </span>
+      </h2>
+      {rows.length === 0 ? (
+        <p className="px-5 py-4 text-sm text-muted-foreground">No tasks on this project.</p>
+      ) : (
+        <>
+          <div
+            className={cn(
+              "hidden min-w-[46rem] gap-3 px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase md:grid",
+              tableCols,
+            )}
+          >
+            <span>Task</span>
+            <span>Project</span>
+            <span>Assignee</span>
+            <span>Priority</span>
+            <span>Status</span>
+            <span>Due date</span>
+            <span>Updated</span>
+          </div>
+          <ul>
+            {rows.map((row) => {
+              const selected = shownId === row.id;
+              const files = attachmentSummary(row);
+              return (
+                <li key={row.id} className={cn("border-t border-border/60", selected && "bg-accent/40")}>
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => onOpen(row.id)}
+                    className={cn(
+                      "grid w-full grid-cols-1 items-start gap-1 px-5 py-3 text-left md:min-w-[46rem] md:items-center md:gap-3",
+                      tableCols,
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium" title={row.title}>
+                        {row.title}
+                      </span>
+                      {files ? <span className="mt-0.5 block text-[11px] text-muted-foreground">{files}</span> : null}
+                    </span>
+                    <span className="truncate text-sm text-muted-foreground" title={row.projectName}>
+                      {shortName(row.projectName)}
+                    </span>
+                    <span className="truncate text-sm text-muted-foreground">{row.owner}</span>
+                    <Priority value={row.priority} />
+                    <Status value={row.status} />
+                    <span
+                      className={cn(
+                        "text-xs tabular-nums",
+                        isOverdue(row) ? "font-medium text-[var(--due-overdue-fg)]" : "text-muted-foreground",
+                      )}
+                    >
+                      {row.dueDate ? formatDate(row.dueDate) : "—"}
+                    </span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{relativeTime(row.updatedAt)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="border-t border-border/70 px-5 py-3 text-sm text-muted-foreground">
+            Showing {rows.length} of {total} tasks
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+function ProjectCard({
+  group,
+  shownId,
+  onOpen,
+}: {
+  group: TaskGroup;
+  shownId: string | null;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card">
+      <h2 className="flex items-center justify-between gap-3 px-4 py-3">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-primary">
+            <FolderIcon className="size-4" aria-hidden="true" />
+          </span>
+          <span className="truncate text-sm font-semibold">{group.name}</span>
+        </span>
+        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground tabular-nums">
+          {group.rows.length}
+        </span>
+      </h2>
+      {group.rows.length === 0 ? (
+        <div className="flex items-center gap-3 border-t border-border/70 px-4 py-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border/80 bg-muted/40 text-muted-foreground">
+            <SquareCheckBigIcon className="size-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">No tasks on this project</span>
+            <span className="block text-xs text-muted-foreground">Add a task to start tracking work.</span>
+          </span>
+        </div>
+      ) : (
+        <ul className="border-t border-border/70">
+          {group.rows.map((row) => {
+            const selected = shownId === row.id;
+            return (
+              <li key={row.id} className={cn("border-b border-border/60 last:border-b-0", selected && "bg-accent/40")}>
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => onOpen(row.id)}
+                  className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted/30"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium" title={row.title}>
+                      {row.title}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      <Status value={row.status} />
+                      <span className="truncate">{row.owner}</span>
+                      <span className={cn("tabular-nums", isOverdue(row) && "font-medium text-[var(--due-overdue-fg)]")}>
+                        {row.dueDate ? formatDate(row.dueDate) : "No date"}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 export function TasksPage() {
   const { data, error, loading, reload } = useApi<Envelope<Task[]>>("/tasks");
@@ -405,6 +563,7 @@ export function TasksPage() {
   const [due, setDue] = useState<DueFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [board, setBoard] = useState<BoardView>("project");
   const tasks = (Array.isArray(data?.data) ? data.data : []).map(asTask);
   const projectList = Array.isArray(projectQuery.data?.data) ? projectQuery.data.data : [];
   useTitle("Tasks");
@@ -515,6 +674,18 @@ export function TasksPage() {
     setCard("all");
   }
 
+  function openTask(id: string) {
+    setSelectedId(id);
+    setPanelOpen(true);
+  }
+
+  const projectGroups = groups.filter((group) => group.key !== "unassigned");
+  const unassigned = groups.find((group) => group.key === "unassigned");
+  const overdueCount = cards.find((item) => item.id === "overdue")?.count ?? 0;
+  const doneCount = cards.find((item) => item.id === "done")?.count ?? 0;
+  const progressCount = cards.find((item) => item.id === "progress")?.count ?? 0;
+  const doneShare = tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100);
+
   return (
     <>
       {loading && !data ? <TablePageSkeleton label="Loading tasks" columns={7} filters={2} /> : null}
@@ -522,9 +693,12 @@ export function TasksPage() {
       {data ? (
         <div className={cn("grid items-start gap-4", shown && "lg:grid-cols-[minmax(0,1fr)_19rem]")}>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tasks</h1>
-              <div className="relative w-full max-w-xs">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tasks</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Everything across your projects, in one place.</p>
+              </div>
+              <div className="relative w-full sm:w-72">
                 <SearchIcon
                   aria-hidden
                   className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -534,15 +708,28 @@ export function TasksPage() {
                   value={query}
                   placeholder="Search tasks"
                   aria-label="Search tasks"
-                  className="h-9 rounded-full bg-card pl-9"
+                  className="h-10 rounded-full bg-card pl-9"
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
               {cards.map((item) => {
                 const selected = card === item.id;
+                const alert = item.id === "overdue" && item.count > 0;
+                const hint =
+                  item.id === "all"
+                    ? "Across all projects"
+                    : item.id === "progress"
+                      ? progressCount === 0
+                        ? "Nothing started yet"
+                        : "Currently in progress"
+                      : item.id === "overdue"
+                        ? item.count > 0
+                          ? "Needs attention"
+                          : "None past due"
+                        : `${doneShare}% done`;
                 return (
                   <button
                     key={item.id}
@@ -550,23 +737,44 @@ export function TasksPage() {
                     aria-pressed={selected}
                     onClick={() => setCard(item.id === "all" || selected ? "all" : item.id)}
                     className={cn(
-                      "surface flex flex-col rounded-2xl bg-card px-3.5 py-3.5 text-left",
+                      "flex flex-col rounded-2xl px-3.5 py-3.5 text-left",
+                      alert
+                        ? "bg-[color-mix(in_oklch,var(--origin-review-dot)_9%,white)] shadow-sm ring-1 ring-[color-mix(in_oklch,var(--origin-review-dot)_32%,transparent)]"
+                        : "surface bg-card",
                       selected && "ring-2 ring-primary",
                     )}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-medium text-muted-foreground">{item.label}</span>
-                      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-primary ring-1 ring-primary/10 [&_svg]:size-3.5">
+                      <span className={cn("text-[11px] font-medium text-muted-foreground", alert && "text-[var(--due-overdue-fg)]")}>
+                        {item.id === "all" ? "Total tasks" : item.id === "progress" ? "In progress" : item.id === "overdue" ? "Overdue" : "Completed"}
+                      </span>
+                      <span
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-lg ring-1 [&_svg]:size-3.5",
+                          alert
+                            ? "bg-[color-mix(in_oklch,var(--origin-review-dot)_14%,white)] text-[var(--due-overdue-fg)] ring-[color-mix(in_oklch,var(--origin-review-dot)_20%,transparent)]"
+                            : "bg-accent text-primary ring-primary/10",
+                        )}
+                      >
                         {item.icon}
                       </span>
                     </span>
-                    <span className="mt-2 text-xl leading-none font-semibold tracking-tight tabular-nums">{item.count}</span>
+                    <span
+                      className={cn(
+                        "mt-2 text-2xl leading-none font-semibold tracking-tight tabular-nums",
+                        alert && "text-[var(--due-overdue-fg)]",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                    <span className={cn("mt-1.5 text-xs text-muted-foreground", alert && "text-[var(--due-overdue-fg)]")}>{hint}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
             <select aria-label="Project" value={project} onChange={(event) => setProject(event.target.value)} className={selectClass}>
               <option value="all">All projects</option>
               {projectList.map((item) => (
@@ -617,110 +825,90 @@ export function TasksPage() {
                 aria-pressed={card === "overdue"}
                 onClick={() => setCard(card === "overdue" ? "all" : "overdue")}
                 className={cn(
-                  "h-9 rounded-full border px-3 text-sm",
+                  "inline-flex h-8 items-center gap-1.5 rounded-full border bg-card px-3 text-xs",
                   card === "overdue"
-                    ? "border-transparent bg-[var(--brand-soft)] text-[var(--due-overdue-fg)]"
-                    : "border-input bg-card text-foreground",
+                    ? "border-dashed border-[color-mix(in_oklch,var(--origin-review-dot)_45%,var(--border))] text-foreground"
+                    : "border-border text-foreground",
                 )}
               >
                 Overdue
+                <span className="grid min-w-4 place-items-center rounded-full bg-[color-mix(in_oklch,var(--origin-review-dot)_16%,white)] px-1 text-[10px] font-semibold text-[var(--due-overdue-fg)] tabular-nums">
+                  {overdueCount}
+                </span>
               </button>
               <button
                 type="button"
                 onClick={clearFilters}
                 disabled={!filtersOn}
-                className="h-9 px-2 text-sm font-medium text-primary disabled:text-muted-foreground"
+                className="h-8 px-1 text-xs font-medium text-primary disabled:text-muted-foreground"
               >
                 Clear filters
               </button>
+            </div>
+              <div className="inline-flex shrink-0 self-end rounded-lg bg-muted p-0.5 sm:self-auto" role="group" aria-label="Task layout">
+                <button
+                  type="button"
+                  aria-pressed={board === "project"}
+                  onClick={() => setBoard("project")}
+                  className={cn(
+                    "h-7 rounded-md px-3 text-xs font-medium",
+                    board === "project" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                  )}
+                >
+                  By project
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={board === "all"}
+                  onClick={() => setBoard("all")}
+                  className={cn(
+                    "h-7 rounded-md px-3 text-xs font-medium",
+                    board === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                  )}
+                >
+                  All tasks
+                </button>
+              </div>
             </div>
 
             {groups.length === 0 ? (
               <div className="mt-5">
                 <EmptyState title="No tasks match" description="Try a different search or filter." />
               </div>
+            ) : board === "all" ? (
+              visible.length === 0 ? (
+                <div className="mt-5">
+                  <EmptyState title="No tasks match" description="Try a different search or filter." />
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <TaskTable
+                    title="All tasks"
+                    rows={visible}
+                    total={visible.length}
+                    shownId={shown?.id ?? null}
+                    onOpen={openTask}
+                  />
+                </div>
+              )
             ) : (
               <div className="mt-5 space-y-4">
-                {groups.map((group) => {
-                  const rows = group.rows;
-                  return (
-                  <section key={group.key} className="overflow-x-auto rounded-2xl bg-card ring-1 ring-border/70">
-                    <h2 className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-3">
-                      <span className="truncate text-sm font-semibold">{group.name}</span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
-                        {rows.length}
-                      </span>
-                    </h2>
-                    {rows.length === 0 ? (
-                      <p className="px-5 py-4 text-sm text-muted-foreground">No tasks on this project.</p>
-                    ) : (
-                    <>
-                    <div
-                      className={cn(
-                        "hidden min-w-[46rem] gap-3 px-5 py-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase md:grid",
-                        tableCols,
-                      )}
-                    >
-                      <span>Task</span>
-                      <span>Project</span>
-                      <span>Assignee</span>
-                      <span>Priority</span>
-                      <span>Status</span>
-                      <span>Due date</span>
-                      <span>Updated</span>
-                    </div>
-                    <ul>
-                      {rows.map((row) => {
-                        const selected = shown?.id === row.id;
-                        const files = attachmentSummary(row);
-                        return (
-                          <li key={row.id} className={cn("border-t border-border/60", selected && "bg-accent/40")}>
-                            <button
-                              type="button"
-                              aria-pressed={selected}
-                              onClick={() => {
-                                setSelectedId(row.id);
-                                setPanelOpen(true);
-                              }}
-                              className={cn(
-                                "grid w-full grid-cols-1 items-start gap-1 px-5 py-3 text-left md:min-w-[46rem] md:items-center md:gap-3",
-                                tableCols,
-                              )}
-                            >
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-medium" title={row.title}>
-                                  {row.title}
-                                </span>
-                                {files ? <span className="mt-0.5 block text-[11px] text-muted-foreground">{files}</span> : null}
-                              </span>
-                              <span className="truncate text-sm text-muted-foreground" title={row.projectName}>
-                                {shortName(row.projectName)}
-                              </span>
-                              <span className="truncate text-sm text-muted-foreground">{row.owner}</span>
-                              <Priority value={row.priority} />
-                              <Status value={row.status} />
-                              <span
-                                className={cn(
-                                  "text-xs tabular-nums",
-                                  isOverdue(row) ? "font-medium text-[var(--due-overdue-fg)]" : "text-muted-foreground",
-                                )}
-                              >
-                                {row.dueDate ? formatDate(row.dueDate) : "—"}
-                              </span>
-                              <span className="text-xs text-muted-foreground tabular-nums">{relativeTime(row.updatedAt)}</span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <p className="border-t border-border/70 px-5 py-3 text-sm text-muted-foreground">
-                      Showing {rows.length} of {visible.length} tasks
-                    </p>
-                    </>
-                    )}
-                  </section>
-                  );
-                })}
+                {projectGroups.length > 0 ? (
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {projectGroups.map((group) => (
+                      <ProjectCard key={group.key} group={group} shownId={shown?.id ?? null} onOpen={openTask} />
+                    ))}
+                  </div>
+                ) : null}
+                {unassigned ? (
+                  <TaskTable
+                    title={unassigned.name}
+                    rows={unassigned.rows}
+                    total={visible.length}
+                    shownId={shown?.id ?? null}
+                    onOpen={openTask}
+                  />
+                ) : null}
               </div>
             )}
           </div>

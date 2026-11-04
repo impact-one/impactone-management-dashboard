@@ -8,6 +8,7 @@ import { ErrorNote, RetryableError } from "../components/PageHeader";
 import { DetailSkeleton } from "../components/PageSkeleton";
 import { dueState, formatDate } from "../lib/format";
 import { useTitle } from "../lib/useTitle";
+import { downloadApiFile } from "../lib/download";
 import { useApi } from "../lib/useApi";
 import type { Envelope, ProjectDetail, Task } from "../types";
 
@@ -289,7 +290,20 @@ export function ProjectPage() {
   const { user } = useAuth();
   const { data, error, loading, reload } = useApi<Envelope<ProjectDetail>>(id ? `/projects/${id}` : null);
   const detail = data?.data;
-  const [active, setActive] = useState("milestones");
+  const [downloadError, setDownloadError] = useState<string | undefined>();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  async function downloadDocument(documentId: string) {
+    setDownloadError(undefined);
+    setDownloadingId(documentId);
+    try {
+      await downloadApiFile(`/documents/files/${encodeURIComponent(documentId)}/download`);
+    } catch (reason) {
+      setDownloadError(reason instanceof Error ? reason.message : "Could not download that file.");
+    } finally {
+      setDownloadingId(null);
+    }
+  }
   useTitle(detail?.project.name ?? "Project");
 
   if (!id) return <ErrorNote message="Project not found." />;
@@ -313,30 +327,20 @@ export function ProjectPage() {
   const currency = consultants.find((item) => item.currency)?.currency ?? "SAR";
   const assignedTotal = funded.reduce((sum, item) => sum + (item.feeAmount ?? 0), 0);
 
-  const sections = [
-    { id: "milestones", label: "Milestones", count: milestones.length },
-    { id: "workstreams", label: "Workstreams", count: workstreams.length },
-    { id: "documents", label: "Documents", count: documents.length },
-    { id: "follow-ups", label: "Follow-ups", count: followUps.length },
-    { id: "tasks", label: "Tasks", count: tasks.length },
-    { id: "consultants", label: "Consultants", count: consultants.length },
-  ];
-
-  function openSection(sectionId: string, focus: boolean) {
-    setActive(sectionId);
-    jumpTo(sectionId, focus);
+  function openSection(sectionId: string) {
+    jumpTo(sectionId, true);
   }
 
   function reviewNow() {
     if (overdueFollowUps.length > 0) {
-      openSection("follow-ups", true);
+      openSection("follow-ups");
       return;
     }
     if (milestones.some((item) => toneOf(item.status) === "review")) {
-      openSection("milestones", true);
+      openSection("milestones");
       return;
     }
-    openSection("workstreams", true);
+    openSection("workstreams");
   }
 
   return (
@@ -433,31 +437,7 @@ export function ProjectPage() {
             </Stat>
           </div>
 
-          <nav aria-label="Project sections" className="mt-5 flex gap-1 overflow-x-auto border-b border-border/80">
-            {sections.map((section) => {
-              const selected = active === section.id;
-              return (
-                <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  aria-current={selected ? "location" : undefined}
-                  className={cn(
-                    "-mb-px shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                    selected ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openSection(section.id, true);
-                  }}
-                >
-                  {section.label}
-                  <span className="ml-1.5 text-xs font-medium text-muted-foreground tabular-nums">{section.count}</span>
-                </a>
-              );
-            })}
-          </nav>
-
-          <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <div className="mt-5 grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <div className="grid content-start gap-4">
               <Panel id="milestones" title="Milestones" count={milestones.length}>
                 {milestones.length === 0 ? (
@@ -484,6 +464,7 @@ export function ProjectPage() {
               </Panel>
 
               <Panel id="documents" title="Documents" count={documents.length}>
+                {downloadError ? <ErrorNote message={downloadError} /> : null}
                 {documents.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">No project documents.</p>
                 ) : (
@@ -494,15 +475,14 @@ export function ProjectPage() {
                           <FileTextIcon className="size-4" aria-hidden="true" />
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm leading-5 font-medium text-foreground">
-                            {item.href ? (
-                              <a href={item.href} target="_blank" rel="noreferrer" className="underline-offset-4 hover:underline">
-                                {item.title}
-                              </a>
-                            ) : (
-                              item.title
-                            )}
-                          </p>
+                          <button
+                            type="button"
+                            onClick={() => downloadDocument(item.id)}
+                            disabled={downloadingId === item.id}
+                            className="text-left text-sm leading-5 font-medium text-foreground underline-offset-4 hover:underline disabled:opacity-60"
+                          >
+                            {downloadingId === item.id ? "Downloading…" : item.title}
+                          </button>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {item.projectId ? person(item.owner) : `${person(item.owner)} · team-wide`}
                           </p>

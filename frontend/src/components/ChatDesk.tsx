@@ -33,6 +33,7 @@ type ChatMessage = {
   role: "user" | "assistant";
   text: string;
   modeLabel?: string;
+  intentLabel?: string;
   pending?: boolean;
   reviewNote?: string;
 };
@@ -57,12 +58,11 @@ export function ChatDesk({
   title,
   lede,
   breadcrumbs,
-  modes,
+  modes = [],
   mode,
   onMode,
   placeholder,
   maxLength,
-  acknowledgeLabel,
   canRun,
   blockedNote,
   onSend,
@@ -70,18 +70,16 @@ export function ChatDesk({
   title: string;
   lede: string;
   breadcrumbs: { label: string; to?: string }[];
-  modes: ChatMode[];
-  mode: string;
-  onMode: (id: string) => void;
+  modes?: ChatMode[];
+  mode?: string;
+  onMode?: (id: string) => void;
   placeholder: string;
   maxLength: number;
-  acknowledgeLabel: string;
   canRun: boolean;
   blockedNote?: string;
-  onSend: (input: { mode: string; brief: string }) => Promise<{ output: string; reviewNote: string }>;
+  onSend: (input: { mode?: string; brief: string }) => Promise<{ output: string; reviewNote: string; intentLabel?: string }>;
 }) {
   const [brief, setBrief] = useState("");
-  const [acknowledged, setAcknowledged] = useState(false);
   const [running, setRunning] = useState(false);
   const [formError, setFormError] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -91,8 +89,7 @@ export function ChatDesk({
   const seq = useRef(0);
   const labelId = useId();
   const selected = modes.find((item) => item.id === mode) ?? modes[0];
-  const needsAck = Boolean(acknowledgeLabel);
-  const ready = (!needsAck || acknowledged) && brief.trim().length >= 8 && !running;
+  const ready = brief.trim().length >= 8 && !running;
 
   useEffect(() => {
     const node = threadRef.current;
@@ -107,14 +104,11 @@ export function ChatDesk({
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!canRun || running || !selected) return;
+    if (!canRun || running) return;
+    if (modes.length > 0 && !selected) return;
     const text = brief.trim();
     if (text.length < 8) {
       setFormError("Write a little more so the reply has something to work from.");
-      return;
-    }
-    if (needsAck && !acknowledged) {
-      setFormError("Confirm you will review the reply before sending.");
       return;
     }
     const userId = nextId();
@@ -125,14 +119,16 @@ export function ChatDesk({
     setRunning(true);
     setMessages((current) => [
       ...current,
-      { id: userId, role: "user", text, modeLabel: selected.label },
-      { id: replyId, role: "assistant", text: "", modeLabel: selected.label, pending: true },
+      { id: userId, role: "user", text, modeLabel: modes.length > 0 ? selected?.label : undefined },
+      { id: replyId, role: "assistant", text: "", pending: true },
     ]);
     try {
-      const result = await onSend({ mode: selected.id, brief: text });
+      const result = await onSend({ mode: selected?.id, brief: text });
       setMessages((current) =>
         current.map((item) =>
-          item.id === replyId ? { ...item, text: result.output, reviewNote: result.reviewNote, pending: false } : item,
+          item.id === replyId
+            ? { ...item, text: result.output, reviewNote: result.reviewNote, intentLabel: result.intentLabel, pending: false }
+            : item,
         ),
       );
     } catch (reason) {
@@ -163,9 +159,9 @@ export function ChatDesk({
   return (
     <div className={frameClass}>
       <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-        <header className="shrink-0 pb-3">
-          <Breadcrumbs items={breadcrumbs} className="mb-2" />
-          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+        <header className="shrink-0 pb-5">
+          <Breadcrumbs items={breadcrumbs} className="mb-2.5" />
+          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         </header>
 
         <div
@@ -179,8 +175,10 @@ export function ChatDesk({
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-4 text-center">
               {selected ? <selected.icon className="size-5 text-primary" /> : null}
-              <p className="mt-3 text-base font-medium">{selected?.label ?? title}</p>
-              <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">{selected?.hint ?? lede}</p>
+              {selected ? <p className="mt-3 text-base font-medium">{selected.label}</p> : null}
+              <p className={selected ? "mt-1 max-w-sm text-sm leading-6 text-muted-foreground" : "max-w-md text-sm leading-6 text-muted-foreground"}>
+                {selected?.hint ?? lede}
+              </p>
               {blockedNote ? <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">{blockedNote}</p> : null}
             </div>
           ) : (
@@ -201,7 +199,7 @@ export function ChatDesk({
                   <li key={message.id} className="flex justify-start">
                     <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-card px-3.5 py-2.5 shadow-sm ring-1 ring-foreground/10">
                       <div className="mb-1.5 flex items-center justify-between gap-3">
-                        <p className="text-[11px] font-medium text-muted-foreground">{title}</p>
+                        <p className="text-[11px] font-medium text-muted-foreground">{message.intentLabel ?? title}</p>
                         {message.pending || !message.text ? null : (
                           <Button
                             type="button"
@@ -234,7 +232,7 @@ export function ChatDesk({
         </div>
 
         {canRun ? (
-          <form className="shrink-0 pt-3 pb-1" onSubmit={(event) => void onSubmit(event)}>
+          <form className="shrink-0 pt-4" onSubmit={(event) => void onSubmit(event)}>
             <div className="rounded-2xl bg-card shadow-sm ring-1 ring-foreground/10 focus-within:ring-2 focus-within:ring-ring/40">
               <label className="sr-only" htmlFor={labelId}>
                 Message
@@ -254,23 +252,8 @@ export function ChatDesk({
                 disabled={running}
                 className="max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent px-3.5 pt-3 text-sm leading-6 outline-none [field-sizing:content] placeholder:text-muted-foreground disabled:opacity-60"
               />
-              {acknowledgeLabel ? (
-                <label className="flex items-start gap-2 px-3.5 text-xs leading-5 text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 size-3.5 shrink-0 accent-primary"
-                    checked={acknowledged}
-                    onChange={(event) => {
-                      setAcknowledged(event.target.checked);
-                      setFormError(undefined);
-                    }}
-                    disabled={running}
-                  />
-                  <span>{acknowledgeLabel}</span>
-                </label>
-              ) : null}
               <div className="flex items-center gap-2 px-2 pt-1 pb-2">
-                {selected ? <ModePicker modes={modes} mode={selected.id} onMode={onMode} disabled={running} /> : null}
+                {selected && onMode ? <ModePicker modes={modes} mode={selected.id} onMode={onMode} disabled={running} /> : null}
                 <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
                   {brief.length > 0 ? `${brief.length.toLocaleString()} / ${maxLength.toLocaleString()}` : ""}
                 </span>

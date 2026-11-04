@@ -91,7 +91,6 @@ export function ClaudePage() {
       onMode={(id) => setWorkflow(id as ClaudeWorkflow)}
       placeholder={placeholders[workflow]}
       maxLength={80000}
-      acknowledgeLabel="I will check important facts. This source has no secrets or budget figures."
       canRun={desk.canRun}
       blockedNote={desk.canRun ? undefined : note}
       onSend={async ({ mode, brief }) => {

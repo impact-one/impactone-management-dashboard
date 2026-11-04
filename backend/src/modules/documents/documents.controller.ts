@@ -24,6 +24,16 @@ export class DocumentsController {
     sendData(res, result.desk, { note: result.note, ...writes() });
   });
 
+  download = asyncHandler(async (req: Request, res: Response) => {
+    const result = await documentsService.download(requireUser(req), routeId(req));
+    res.setHeader("Content-Type", result.contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(result.body);
+  });
+
   create = asyncHandler(async (req: Request, res: Response) => {
     const file = await documentsService.create(requireUser(req), req.body);
     sendData(res, file, { note: "File added.", ...writes() });

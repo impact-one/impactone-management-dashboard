@@ -34,7 +34,7 @@ describe("chatgpt assistant", () => {
     const result = await assistantService.desk(user("viewer"));
     assert.equal(result.desk.canRun, false);
     assert.equal(result.desk.provider, "ChatGPT");
-    assert.equal(result.desk.workflows.length, 5);
+    assert.equal(result.desk.workflows.length, 0);
     assert.match(result.note, /executive and manager/i);
   });
 
@@ -42,7 +42,6 @@ describe("chatgpt assistant", () => {
     await assert.rejects(
       () =>
         assistantService.run(user("consultant"), {
-          workflow: "summarize",
           brief: "Summarise the workshop notes from Tuesday.",
           acknowledged: true,
         }),
@@ -54,7 +53,6 @@ describe("chatgpt assistant", () => {
     await assert.rejects(
       () =>
         assistantService.run(user("manager"), {
-          workflow: "draft",
           brief: "Draft a note and include sk-testkey1234567890 in it.",
           acknowledged: true,
         }),
@@ -66,7 +64,6 @@ describe("chatgpt assistant", () => {
     await assert.rejects(
       () =>
         assistantService.run(user("manager"), {
-          workflow: "summarize",
           brief: "Summarise the workshop notes from Tuesday.",
           acknowledged: false,
         }),
@@ -80,11 +77,22 @@ describe("chatgpt assistant", () => {
     await assert.rejects(
       () =>
         assistantService.run(user("manager"), {
-          workflow: "summarize",
           brief: "Summarise the workshop notes from Tuesday.",
           acknowledged: true,
         }),
       (error) => statusOf(error) === 503,
     );
+  });
+
+  it("answers the next meeting from the desk", async () => {
+    const result = await assistantService.run(user("manager"), {
+      workflow: "summarize",
+      brief: "When is my next meeting?",
+      acknowledged: true,
+    });
+    assert.equal(result.intent, "overview");
+    assert.equal(result.intentLabel, "Desk");
+    assert.equal(result.model, null);
+    assert.match(result.output, /meeting/i);
   });
 });

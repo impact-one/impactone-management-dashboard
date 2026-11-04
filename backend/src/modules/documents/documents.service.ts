@@ -5,7 +5,7 @@ import { AppError } from "../../lib/AppError.js";
 import { isStaff } from "../../lib/permissions.js";
 import { canSeeProject, filterByProject } from "../../lib/visibility.js";
 import type { DocumentItem, DriveDesk, DriveFile, PublicUser } from "../../types/domain.js";
-import { driveClient, parseLiveId } from "./drive.client.js";
+import { downloadFilename, driveClient, parseLiveId } from "./drive.client.js";
 import { createFileSchema, parseBody, removeShareSchema, shareFileSchema } from "./documents.schema.js";
 
 const LIBRARY = {
@@ -93,6 +93,37 @@ export class DocumentsService {
     };
     store.driveFiles.unshift(file);
     return file;
+  }
+
+  async download(user: PublicUser, id: string) {
+    const liveId = parseLiveId(id);
+    if (liveId) {
+      if (!isStaff(user)) throw new AppError(403, "Live Drive files are limited to executive and manager roles.");
+      if (!(await this.useLive())) throw new AppError(404, "That file is not in the connected Drive.");
+      return driveClient.downloadFile(liveId);
+    }
+
+    const drive = filterByProject(user, store.driveFiles, store.projects).find((file) => file.id === id);
+    if (drive) {
+      if (drive.kind === "folder") throw new AppError(400, "Folders cannot be downloaded.");
+      return textDownload(drive.title, [
+        drive.title,
+        `Owner: ${drive.owner}`,
+        `Project: ${drive.projectName}`,
+        `Location: ${drive.folderName}`,
+        drive.source.detail,
+      ]);
+    }
+
+    const known = filterByProject(user, store.documents, store.projects).find((item) => item.id === id);
+    if (!known) throw new AppError(404, "That file is not in the library.");
+    return textDownload(known.title, [
+      known.title,
+      `Owner: ${known.owner}`,
+      `Project: ${known.projectName}`,
+      known.source.detail,
+      ...known.reviewFlags,
+    ]);
   }
 
   async share(user: PublicUser, id: string, body: unknown): Promise<DriveFile> {
@@ -196,6 +227,15 @@ export class DocumentsService {
     if (!googleId) throw new AppError(404, "That file is not in the connected Drive.");
     return googleId;
   }
+}
+
+function textDownload(title: string, lines: string[]) {
+  const body = lines.map((line) => line.trim()).filter(Boolean).join("\n\n");
+  return {
+    body: Buffer.from(`${body}\n`, "utf8"),
+    filename: downloadFilename(title, ".txt"),
+    contentType: "text/plain; charset=utf-8",
+  };
 }
 
 function canWrite(file: DriveFile) {

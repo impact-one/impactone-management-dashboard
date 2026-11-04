@@ -1,8 +1,7 @@
 import { env } from "../../config/env.js";
 import { AppError } from "../../lib/AppError.js";
-import type { AssistantWorkflow } from "../../types/domain.js";
 import type { LiveResult } from "../integrations/clients/readOnlyClient.js";
-import { SYSTEM_PROMPT, WORKFLOWS, userPrompt } from "./assistant.prompts.js";
+import { AUTOMATE_SYSTEM_PROMPT, SYSTEM_PROMPT, completionPrompt } from "./assistant.prompts.js";
 
 const API = "https://api.openai.com/v1";
 const STATUS_CACHE_MS = 60_000;
@@ -16,6 +15,7 @@ export function invalidateAssistantCache() {
 export const assistantClient = {
   status,
   complete,
+  classify,
 };
 
 async function status(): Promise<LiveResult<{ model: string }>> {
@@ -64,7 +64,7 @@ async function loadStatus(): Promise<LiveResult<{ model: string }>> {
       ok: true,
       configured: true,
       checkedAt,
-      message: `ChatGPT is connected with ${model}. Staff can draft, research, analyze, brainstorm, and summarize.`,
+      message: `ChatGPT is connected with ${model}. Staff can ask about the desk, or draft, research, analyze, and brainstorm.`,
       data: { model },
     };
   } catch {
@@ -78,7 +78,37 @@ async function loadStatus(): Promise<LiveResult<{ model: string }>> {
   }
 }
 
-async function complete(workflow: AssistantWorkflow, brief: string): Promise<{ model: string; output: string }> {
+async function classify(brief: string): Promise<string> {
+  const result = await chat({
+    system: "Reply with one word only: draft, research, analyze, brainstorm, automate, or overview.",
+    user: brief.slice(0, 1500),
+    temperature: 0,
+    maxTokens: 16,
+  });
+  return result.output;
+}
+
+async function complete(input: {
+  instruction: string;
+  temperature: number;
+  brief: string;
+  snapshot?: string;
+  automate?: boolean;
+}): Promise<{ model: string; output: string }> {
+  return chat({
+    system: input.automate ? AUTOMATE_SYSTEM_PROMPT : SYSTEM_PROMPT,
+    user: completionPrompt(input.instruction, input.brief, input.snapshot),
+    temperature: input.temperature,
+    maxTokens: 900,
+  });
+}
+
+async function chat(input: {
+  system: string;
+  user: string;
+  temperature: number;
+  maxTokens: number;
+}): Promise<{ model: string; output: string }> {
   if (!env.openaiApiKey) {
     throw new AppError(503, "OpenAI API key is not set.");
   }
@@ -93,11 +123,11 @@ async function complete(workflow: AssistantWorkflow, brief: string): Promise<{ m
       },
       body: JSON.stringify({
         model,
-        temperature: WORKFLOWS[workflow].temperature,
-        max_tokens: 900,
+        temperature: input.temperature,
+        max_tokens: input.maxTokens,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt(workflow, brief) },
+          { role: "system", content: input.system },
+          { role: "user", content: input.user },
         ],
       }),
       signal: AbortSignal.timeout(45_000),

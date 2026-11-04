@@ -5,6 +5,7 @@ import { AppError } from "../../lib/AppError.js";
 import { permissionsFor } from "../../lib/permissions.js";
 import type { PublicUser, Role } from "../../types/domain.js";
 import { documentsService } from "./documents.service.js";
+import { downloadFilename, exportForMime } from "./drive.client.js";
 
 function user(role: Role): PublicUser {
   return {
@@ -97,6 +98,34 @@ describe("drive library", () => {
     assert.equal(folder.shares.find((share) => share.email === "ops@impactone.example")?.role, "reader");
     const removed = await documentsService.unshare(user("manager"), "folder-ioc", { email: "ops@impactone.example" });
     assert.equal(removed.shares.some((share) => share.email === "ops@impactone.example"), false);
+  });
+
+  it("downloads a library document as a text file", async () => {
+    const file = await documentsService.download(user("manager"), "doc-brief");
+    assert.equal(file.contentType, "text/plain; charset=utf-8");
+    assert.equal(file.filename, "Pilot task brief.txt");
+    assert.match(file.body.toString("utf8"), /Pilot task brief/);
+    assert.match(file.body.toString("utf8"), /Mikolaj/);
+  });
+
+  it("refuses a folder download and a document outside the viewer", async () => {
+    await assert.rejects(
+      () => documentsService.download(user("manager"), "folder-impact"),
+      (error) => statusOf(error) === 400,
+    );
+    await assert.rejects(
+      () => documentsService.download(user("consultant"), "doc-brief"),
+      (error) => statusOf(error) === 404,
+    );
+    const visible = await documentsService.download(user("consultant"), "file-scope");
+    assert.equal(visible.filename, "Consultant scope.txt");
+  });
+
+  it("names a Drive export for local viewing", () => {
+    assert.equal(exportForMime("application/vnd.google-apps.document")?.ext, ".pdf");
+    assert.equal(exportForMime("application/vnd.google-apps.spreadsheet")?.ext, ".xlsx");
+    assert.equal(downloadFilename("Team access notes", ".pdf"), "Team access notes.pdf");
+    assert.equal(downloadFilename("Budget.xlsx", ".xlsx"), "Budget.xlsx");
   });
 
   it("asks for a real folder", async () => {

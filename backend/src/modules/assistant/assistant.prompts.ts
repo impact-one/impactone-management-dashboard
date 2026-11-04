@@ -41,6 +41,12 @@ export const WORKFLOWS: Record<
   },
 };
 
+export const CHAT_TASK = {
+  instruction:
+    "Answer the person directly in a short plain reply. If they are saying hello or asking how you are, greet them and say you can help with meetings, messages, tasks, and drafts. If they pasted notes, turn those notes into a clear draft and mark gaps as [needs confirmation]. Do not invent meetings, Slack messages, tasks, projects, or documents. You have not looked at the desk for this message.",
+  temperature: 0.4,
+};
+
 export const AUTOMATE_TASK = {
   instruction:
     "Explain the workflows this desk already documents, using only the catalogue in the message. Say what is connected and what is not. Do not claim you ran a workflow. Do not give steps for posting, paying, scheduling, creating tasks, or granting access.",

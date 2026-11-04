@@ -4,8 +4,8 @@ import type { AssistantDesk, AssistantRun, PublicUser } from "../../types/domain
 import { assistantClient } from "./assistant.client.js";
 import { answerLookup, formatAutomations, refusalAnswer } from "./assistant.desk.js";
 import { findConfidential } from "./assistant.guard.js";
-import { INTENT_LABEL, classifyIntent, intentFromModel, type ClassifiedIntent } from "./assistant.intent.js";
-import { AUTOMATE_TASK, WORKFLOWS } from "./assistant.prompts.js";
+import { INTENT_LABEL, classifyIntent, type ClassifiedIntent } from "./assistant.intent.js";
+import { AUTOMATE_TASK, CHAT_TASK, WORKFLOWS } from "./assistant.prompts.js";
 import { parseBody, runSchema } from "./assistant.schema.js";
 
 const MODEL_REVIEW =
@@ -61,11 +61,32 @@ export class AssistantService {
       return this.deskRun("automate", refused.text, refused.origin);
     }
     if (classified.intent === "overview" && classified.lookup) {
-      const answer = await answerLookup(user, classified.lookup);
+      const answer = await answerLookup(user, classified.lookup, {
+        latest: classified.latest,
+        mine: classified.mine,
+        person: user.name,
+      });
       return this.deskRun("overview", answer.text, answer.origin);
     }
+    if (classified.intent === "chat") {
+      await this.requireModel();
+      const written = await assistantClient.complete({
+        instruction: CHAT_TASK.instruction,
+        temperature: CHAT_TASK.temperature,
+        brief: input.brief,
+      });
+      return {
+        workflow: "chat",
+        intent: "chat",
+        intentLabel: INTENT_LABEL.chat,
+        model: written.model,
+        output: written.output,
+        reviewNote: MODEL_REVIEW,
+        origin: "live",
+      };
+    }
     if (classified.intent === "automate") {
-      const result = await this.requireModel();
+      await this.requireModel();
       const written = await assistantClient.complete({
         instruction: AUTOMATE_TASK.instruction,
         temperature: AUTOMATE_TASK.temperature,
@@ -77,7 +98,7 @@ export class AssistantService {
         workflow: "automate",
         intent: "automate",
         intentLabel: INTENT_LABEL.automate,
-        model: written.model || result.model,
+        model: written.model,
         output: written.output,
         reviewNote: MODEL_REVIEW,
         origin: "live",
@@ -123,15 +144,7 @@ export class AssistantService {
   }
 
   private async resolveIntent(brief: string): Promise<ClassifiedIntent> {
-    const ruled = classifyIntent(brief);
-    if (ruled) return ruled;
-    try {
-      await this.requireModel();
-      const word = await assistantClient.classify(brief);
-      return intentFromModel(word);
-    } catch {
-      return { intent: "draft", writing: "draft" };
-    }
+    return classifyIntent(brief) ?? { intent: "chat" };
   }
 }
 

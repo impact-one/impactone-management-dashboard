@@ -95,13 +95,17 @@ export function formatAutomations(): string {
     .join("\n");
 }
 
-export async function answerLookup(user: PublicUser, lookup: DeskLookup): Promise<DeskAnswer> {
+export async function answerLookup(
+  user: PublicUser,
+  lookup: DeskLookup,
+  options: { latest?: boolean; mine?: boolean; person?: string } = {},
+): Promise<DeskAnswer> {
   if (lookup === "meeting") {
     const listed = await calendarService.list(user);
     return formatNextMeeting(listed.items);
   }
   if (lookup === "message") return answerMessage(user);
-  if (lookup === "tasks") return answerTasks(user);
+  if (lookup === "tasks") return answerTasks(user, options);
   if (lookup === "projects") return answerProjects(user);
   if (lookup === "documents") return answerDocuments(user);
   if (lookup === "followUps") return answerFollowUps(user);
@@ -122,15 +126,44 @@ async function answerMessage(user: PublicUser): Promise<DeskAnswer> {
   return formatNewMessage({ slack: slackMessage, comment });
 }
 
-async function answerTasks(user: PublicUser): Promise<DeskAnswer> {
+async function answerTasks(
+  user: PublicUser,
+  options: { latest?: boolean; mine?: boolean; person?: string },
+): Promise<DeskAnswer> {
   const listed = await tasksService.list(user);
-  const open = listed.items.filter((task) => !task.closed).slice(0, 8);
-  if (open.length === 0) return { text: "There are no open tasks on the desk.", origin: "live" };
-  const lines = open.map((task) => taskLine(task));
+  const open = listed.items.filter((task) => !task.closed);
+  const mine = options.mine ? open.filter((task) => belongsTo(task, options.person)) : open;
+  const pool = options.mine ? mine : open;
+  if (options.latest) {
+    const task = [...pool].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))[0];
+    if (!task) {
+      const whose = options.mine ? "assigned to you" : "on the desk";
+      return { text: `There is no open task ${whose}.`, origin: "live" };
+    }
+    const origin = runOrigin(task.source.origin);
+    const due = task.dueDate ? `due ${task.dueDate}` : "no due date";
+    const updated = task.updatedAt ? ` Updated ${task.updatedAt.slice(0, 10)}.` : "";
+    return {
+      text: `Your latest task is “${task.title}” — ${task.status} — ${due} — ${task.owner || "unassigned"}${task.projectName ? ` — ${task.projectName}` : ""}.${updated} This is ${origin === "sample" ? "sample" : "live"} task data.`,
+      origin,
+    };
+  }
+  if (pool.length === 0) {
+    return { text: options.mine ? "You have no open tasks assigned to you." : "There are no open tasks on the desk.", origin: "live" };
+  }
+  const lines = pool.slice(0, 8).map((task) => taskLine(task));
   return {
-    text: `Open tasks (${listed.note}):\n${lines.join("\n")}`,
-    origin: runOrigin(open[0]?.source.origin ?? "live"),
+    text: `${options.mine ? "Your open tasks" : "Open tasks"} (${listed.note}):\n${lines.join("\n")}`,
+    origin: runOrigin(pool[0]?.source.origin ?? "live"),
   };
+}
+
+function belongsTo(task: Task, person?: string) {
+  if (!person) return false;
+  const owner = task.owner.trim().toLowerCase();
+  const name = person.trim().toLowerCase();
+  if (!owner || !name) return false;
+  return owner === name || owner.includes(name) || name.includes(owner);
 }
 
 async function answerProjects(user: PublicUser): Promise<DeskAnswer> {

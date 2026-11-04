@@ -32,4 +32,18 @@ describe("assistant intent", () => {
     assert.equal(result?.intent, "draft");
     assert.equal(result?.writing, "draft");
   });
+
+  it("treats a greeting as conversation", () => {
+    assert.equal(classifyIntent("hi how are u")?.intent, "chat");
+    assert.equal(classifyIntent("hello how are you")?.intent, "chat");
+    assert.equal(classifyIntent("hi how are u")?.lookup, undefined);
+  });
+
+  it("reads a latest-task question as that person's task", () => {
+    const result = classifyIntent("latest task of mine");
+    assert.equal(result?.intent, "overview");
+    assert.equal(result?.lookup, "tasks");
+    assert.equal(result?.latest, true);
+    assert.equal(result?.mine, true);
+  });
 });

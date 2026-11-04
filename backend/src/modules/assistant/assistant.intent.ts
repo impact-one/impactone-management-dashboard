@@ -1,4 +1,4 @@
-export const AGENT_INTENTS = ["draft", "research", "analyze", "brainstorm", "automate", "overview"] as const;
+export const AGENT_INTENTS = ["draft", "research", "analyze", "brainstorm", "automate", "overview", "chat"] as const;
 
 export type AgentIntent = (typeof AGENT_INTENTS)[number];
 
@@ -11,6 +11,10 @@ export type ClassifiedIntent = {
   writing?: WritingTask;
   lookup?: DeskLookup;
   refuseWrite?: boolean;
+  /** One most recently updated task, not the open-task list. */
+  latest?: boolean;
+  /** Limit tasks to the person who asked. */
+  mine?: boolean;
 };
 
 export const INTENT_LABEL: Record<AgentIntent, string> = {
@@ -20,6 +24,7 @@ export const INTENT_LABEL: Record<AgentIntent, string> = {
   brainstorm: "Brainstorm",
   automate: "Automate",
   overview: "Desk",
+  chat: "Chat",
 };
 
 export function classifyIntent(brief: string): ClassifiedIntent | null {
@@ -27,7 +32,14 @@ export function classifyIntent(brief: string): ClassifiedIntent | null {
   if (asksToAct(text)) return { intent: "automate", refuseWrite: true };
   if (asksMeeting(text)) return { intent: "overview", lookup: "meeting" };
   if (asksMessage(text)) return { intent: "overview", lookup: "message" };
-  if (asksTasks(text)) return { intent: "overview", lookup: "tasks" };
+  if (asksTasks(text)) {
+    return {
+      intent: "overview",
+      lookup: "tasks",
+      latest: /\b(latest|newest|most recent|last)\b/i.test(text),
+      mine: /\b(my|mine)\b/i.test(text),
+    };
+  }
   if (asksProjects(text)) return { intent: "overview", lookup: "projects" };
   if (asksDocuments(text)) return { intent: "overview", lookup: "documents" };
   if (asksFollowUps(text)) return { intent: "overview", lookup: "followUps" };
@@ -38,12 +50,13 @@ export function classifyIntent(brief: string): ClassifiedIntent | null {
   if (/\b(analy[sz]e|review)\b/i.test(text)) return { intent: "analyze", writing: "analyze" };
   if (/\b(brainstorm|ideas for|options for)\b/i.test(text)) return { intent: "brainstorm", writing: "brainstorm" };
   if (/\b(draft|write|compose|email)\b/i.test(text)) return { intent: "draft", writing: "draft" };
+  if (isSmallTalk(text)) return { intent: "chat" };
   return null;
 }
 
 export function intentFromModel(word: string): ClassifiedIntent {
   const cleaned = word.trim().toLowerCase().replace(/[^a-z]/g, "");
-  if (cleaned === "overview" || cleaned === "desk") return { intent: "overview", lookup: "dashboard" };
+  if (cleaned === "overview" || cleaned === "desk" || cleaned === "chat") return { intent: "chat" };
   if (cleaned === "automate" || cleaned === "automation") return { intent: "automate" };
   if (cleaned === "research") return { intent: "research", writing: "research" };
   if (cleaned === "analyze" || cleaned === "analyse" || cleaned === "summarize" || cleaned === "summarise") {
@@ -84,7 +97,18 @@ function asksMessage(text: string) {
 
 function asksTasks(text: string) {
   if (/\b(draft|write|compose)\b/i.test(text)) return false;
-  return /\b(my tasks|open tasks|due tasks|deadlines|what(?:'s| is) due|tasks due|overdue)\b/i.test(text);
+  return (
+    /\b(my tasks|open tasks|due tasks|deadlines|what(?:'s| is) due|tasks due|overdue)\b/i.test(text) ||
+    /\b(latest|newest|most recent|last|my)\s+tasks?\b/i.test(text) ||
+    /\btasks?\s+of\s+mine\b/i.test(text)
+  );
+}
+
+function isSmallTalk(text: string) {
+  const compact = text.replace(/[!?.]+$/g, "").trim();
+  if (compact.length > 80) return false;
+  if (/\b(meeting|calendar|slack|clickup|task|project|document|deadline|follow-?up)\b/i.test(compact)) return false;
+  return /^(hi|hello|hey|hiya|yo|thanks|thank you|good (morning|afternoon|evening))\b/i.test(compact);
 }
 
 function asksProjects(text: string) {

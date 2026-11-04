@@ -464,7 +464,7 @@ export interface AiCatalog {
 
 export type AssistantWorkflow = "draft" | "research" | "analyze" | "brainstorm" | "summarize";
 
-export type AssistantIntent = "draft" | "research" | "analyze" | "brainstorm" | "automate" | "overview";
+export type AssistantIntent = "draft" | "research" | "analyze" | "brainstorm" | "automate" | "overview" | "chat";
 
 export interface AssistantDesk {
   connected: boolean;

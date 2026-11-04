@@ -35,7 +35,6 @@ type ChatMessage = {
   modeLabel?: string;
   intentLabel?: string;
   pending?: boolean;
-  reviewNote?: string;
 };
 
 const frameClass = "-my-5 flex h-[calc(100svh-4rem)] min-h-0 flex-col sm:-my-6 md:h-[calc(100svh-4.5rem)]";
@@ -127,7 +126,7 @@ export function ChatDesk({
       setMessages((current) =>
         current.map((item) =>
           item.id === replyId
-            ? { ...item, text: result.output, reviewNote: result.reviewNote, intentLabel: result.intentLabel, pending: false }
+            ? { ...item, text: result.output, intentLabel: result.intentLabel, pending: false }
             : item,
         ),
       );
@@ -220,9 +219,6 @@ export function ChatDesk({
                       ) : (
                         <div className="text-sm leading-6 whitespace-pre-wrap">{message.text}</div>
                       )}
-                      {message.reviewNote ? (
-                        <p className="mt-2 text-xs leading-5 text-muted-foreground">{message.reviewNote}</p>
-                      ) : null}
                     </div>
                   </li>
                 ),

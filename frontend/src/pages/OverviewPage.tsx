@@ -61,13 +61,11 @@ function Overview({ dashboard }: { dashboard: DashboardData }) {
           </Button>
         }
       >
-        {dashboard.statuses.every((item) => item.count === 0) ? (
+        {dashboard.statuses.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">No tasks in view.</p>
         ) : (
           <ul className="flex flex-wrap gap-2 px-4 py-4 sm:px-5">
-            {dashboard.statuses
-              .filter((item) => item.count > 0)
-              .map((item) => (
+            {dashboard.statuses.map((item) => (
               <li
                 key={item.name}
                 className="flex max-w-full items-center gap-2 rounded-full bg-accent/60 px-3 py-1.5 ring-1 ring-border/70"

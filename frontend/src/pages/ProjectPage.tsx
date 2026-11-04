@@ -106,7 +106,7 @@ export function ProjectPage() {
 
   if (!id) return <ErrorNote message="Project not found." />;
 
-  const tasks = detail ? [...detail.tasks, ...detail.teamLiveTasks] : [];
+  const tasks = detail?.tasks ?? [];
   const documents = detail ? [...detail.documents, ...detail.teamLiveDocuments] : [];
 
   return (
@@ -177,7 +177,9 @@ export function ProjectPage() {
                         key={row.id}
                         label={row.title}
                         title={taskTitle(row)}
-                        detail={row.projectId ? row.owner : `${row.owner} · team-wide`}
+                        detail={[row.projectId ? row.owner : `${row.owner} · team-wide`, row.status, row.priority ?? ""]
+                          .filter(Boolean)
+                          .join(" · ")}
                         aside={when(row.dueDate)}
                       />
                     ))

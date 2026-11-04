@@ -52,16 +52,50 @@ export interface Project {
   workstreams: Workstream[];
 }
 
+export type TaskPriority = "urgent" | "high" | "normal" | "low";
+
+export interface TaskAttachment {
+  id: string;
+  title: string;
+  extension: string;
+  kind: "image" | "file";
+  url: string | null;
+  thumbnailUrl: string | null;
+}
+
+export interface TaskCheckItem {
+  id: string;
+  name: string;
+  resolved: boolean;
+}
+
+export interface TaskComment {
+  id: string;
+  author: string;
+  text: string;
+  postedAt: string | null;
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
   projectName: string;
+  listName: string;
   title: string;
+  description: string;
   owner: string;
   responsibility: string;
   status: string;
   closed?: boolean;
+  priority: TaskPriority | null;
   dueDate: string | null;
+  updatedAt: string | null;
+  createdAt: string | null;
+  parentId: string | null;
+  tags: string[];
+  attachments: TaskAttachment[];
+  checklist: TaskCheckItem[];
+  comments: TaskComment[];
   source: DataSource;
   href: string | null;
 }
@@ -275,6 +309,19 @@ export interface CalendarDesk {
   meetings: Meeting[];
 }
 
+export interface SlackFile {
+  id: string;
+  name: string;
+  title: string;
+  mimetype: string;
+  filetype: string;
+  prettyType: string;
+  size: number;
+  permalink: string | null;
+  kind: "image" | "file";
+  preview: boolean;
+}
+
 export interface SlackMessage {
   id: string;
   channelId: string;
@@ -284,6 +331,7 @@ export interface SlackMessage {
   postedAt: string;
   source: DataSource;
   href: string | null;
+  files: SlackFile[];
 }
 
 export interface SlackDesk {

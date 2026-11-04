@@ -7,7 +7,7 @@ export function auditTrail(req: Request, res: Response, next: NextFunction) {
     const path = req.originalUrl.split("?")[0] ?? req.originalUrl;
     if (path.startsWith("/api/health")) return;
     // Soft Slack desk polls would flood the in-memory audit trail.
-    if (req.method === "GET" && (path === "/api/slack" || path === "/api/slack/desk")) return;
+    if (req.method === "GET" && (path === "/api/slack" || path === "/api/slack/desk" || path.startsWith("/api/slack/files/"))) return;
     recordAudit({
       actorEmail: req.user.email,
       role: req.user.role,

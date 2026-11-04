@@ -31,6 +31,20 @@ function sampleMessages(): SlackMessage[] {
         detail: "Labelled sample until SLACK_BOT_TOKEN and SLACK_CHANNEL_ID are set.",
       },
       href: null,
+      files: [
+        {
+          id: "F000SAMPLE01",
+          name: "operations-notes.pdf",
+          title: "Operations notes",
+          mimetype: "application/pdf",
+          filetype: "pdf",
+          prettyType: "PDF",
+          size: 184320,
+          permalink: null,
+          kind: "file",
+          preview: false,
+        },
+      ],
     },
   ];
 }
@@ -100,6 +114,16 @@ export class SlackService {
     const message = await slackClient.postMessage(env.slackChannelId, input.text);
     invalidateSlackCache();
     return message;
+  }
+
+  async preview(user: PublicUser, fileId: string): Promise<{ body: Buffer; contentType: string; filename: string }> {
+    if (!isStaff(user)) {
+      throw new AppError(403, "Only executive and manager roles can open Slack files from this desk.");
+    }
+    if (!env.slackBotToken || !env.slackChannelId) {
+      throw new AppError(503, "Slack bot token or channel id is not set.");
+    }
+    return slackClient.readFilePreview(fileId);
   }
 }
 

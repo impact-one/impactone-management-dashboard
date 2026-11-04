@@ -17,7 +17,7 @@ SLACK_CHANNEL_ID=C…
 
 1. Open https://api.slack.com/apps and sign in to the Impact workspace.  
 2. **Create an App** → **Blank app** → name it (e.g. Impact Dashboard) → pick the workspace.  
-3. Add bot scopes: `channels:history`, `channels:read`, `chat:write`.  
+3. Add bot scopes: `channels:history`, `channels:read`, `chat:write`, `files:read`. `files:read` lets the desk show image and document previews. File names still appear without it.  
 4. **Create and Install** → Allow. Ignore any Slack CLI / `slack run` screens.  
 5. **OAuth & Permissions** → copy **Bot User OAuth Token** (`xoxb-…`) into `.env`.  
 6. Open the channel in Slack. From the browser URL, copy the id that starts with `C` into `.env`.  
@@ -30,6 +30,7 @@ SLACK_CHANNEL_ID=C…
 2. Open **Slack**.  
 3. Write a short update → **Post to Slack**.  
 4. Check the channel in Slack. New channel messages show on the desk after refresh or about 10 seconds.
+5. Use **Search messages** on the desk to find a recent update by text, author, or file name.
 
 Do not paste tokens or budget figures into messages.
 

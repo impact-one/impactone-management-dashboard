@@ -1,6 +1,6 @@
 import { store } from "../../data/store.js";
 import { AppError } from "../../lib/AppError.js";
-import type { PublicUser } from "../../types/domain.js";
+import type { PublicUser, Task } from "../../types/domain.js";
 import { canSeeProject } from "../../lib/visibility.js";
 import { presentConsultants } from "../consultants/consultants.service.js";
 import { documentsService } from "../documents/documents.service.js";
@@ -18,9 +18,8 @@ export class ProjectsService {
     const [taskResult, documentResult] = await Promise.all([tasksService.list(user), documentsService.list(user)]);
 
     const tasks = taskResult.items.filter((item) => item.projectId === id);
-    const teamLiveTasks = taskResult.items.filter(
-      (item) => item.projectId === null && item.source.origin === "live",
-    );
+    // Tasks with no project stay on the Tasks screen once. They are not repeated on every project.
+    const teamLiveTasks: Task[] = [];
     const documents = documentResult.items.filter((item) => item.projectId === id);
     const teamLiveDocuments = documentResult.items.filter(
       (item) => item.projectId === null && item.source.origin === "live",

@@ -6,3 +6,5 @@ export const tasksRouter = Router();
 
 tasksRouter.use(authenticate);
 tasksRouter.get("/", tasksController.list);
+tasksRouter.get("/:id/files/:fileId", tasksController.file);
+tasksRouter.get("/:id", tasksController.get);

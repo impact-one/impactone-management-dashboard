@@ -169,7 +169,7 @@ export function DeskSkeleton({ label, rows = 5 }: { label: string; rows?: number
   );
 }
 
-/** Slack — composer + message table */
+/** Slack — composer + message feed */
 export function SlackSkeleton({ label = "Loading Slack" }: { label?: string }) {
   return (
     <div className="grid gap-6" role="status" aria-label={label}>
@@ -184,7 +184,21 @@ export function SlackSkeleton({ label = "Loading Slack" }: { label?: string }) {
       </div>
       <div>
         <Block className="mb-3 h-4 w-36" />
-        <TableSkeleton columns={4} rows={5} label={label} />
+        <div className="surface overflow-hidden rounded-2xl bg-card ring-0">
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-3.5">
+            <Block className="h-4 w-32" />
+            <Block className="h-9 w-56" />
+          </div>
+          {Array.from({ length: 4 }, (_, row) => (
+            <div key={row} className="flex gap-3 border-b px-4 py-3.5 last:border-b-0">
+              <Block className="size-8 rounded-full" />
+              <div className="grid flex-1 gap-2">
+                <Block className="h-3 w-40" />
+                <Block className="h-4 w-[80%]" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

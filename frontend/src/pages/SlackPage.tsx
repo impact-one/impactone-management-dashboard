@@ -2,23 +2,16 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { RefreshCwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HashIcon, MessageSquareIcon, RadioIcon, UsersIcon } from "lucide-react";
-import { DataTable } from "../components/DataTable";
 import { ErrorNote, Note, PageHeader, RetryableError } from "../components/PageHeader";
+import { SlackFeed } from "../components/SlackFeed";
 import { SlackSkeleton } from "../components/PageSkeleton";
-import { SourceBadge } from "../components/SourceBadge";
 import { MetricStrip, Section } from "../components/Surface";
 import { api } from "../lib/api";
-import { formatWhen } from "../lib/format";
+import { displayAuthor } from "../lib/slackText";
 import type { Envelope, SlackDesk, SlackMessage } from "../types";
 
 /** Soft sync only — not a realtime bus. Cache on API is 10s; keep poll aligned. */
 const POLL_MS = 10_000;
-
-function displayAuthor(author: string) {
-  const value = author.trim() || "Unknown";
-  if (/^U[A-Z0-9]{8,}$/i.test(value)) return `Member ${value.slice(-4)}`;
-  return value;
-}
 
 function sortMessages(messages: SlackMessage[]): SlackMessage[] {
   return [...messages].sort((a, b) => b.postedAt.localeCompare(a.postedAt));
@@ -221,25 +214,7 @@ export function SlackPage() {
           ) : null}
 
           <Section title="Recent messages">
-            <DataTable
-              caption="Slack messages"
-              rows={desk.messages}
-              empty="No messages in this channel yet."
-              columns={[
-                { key: "text", header: "Message", render: (row) => row.text },
-                { key: "author", header: "From", render: (row) => displayAuthor(row.author) },
-                {
-                  key: "when",
-                  header: "When",
-                  render: (row) => formatWhen(row.postedAt),
-                },
-                {
-                  key: "source",
-                  header: "Data",
-                  render: (row) => <SourceBadge origin={row.source.origin} />,
-                },
-              ]}
-            />
+            <SlackFeed messages={desk.messages} />
           </Section>
 
         </div>

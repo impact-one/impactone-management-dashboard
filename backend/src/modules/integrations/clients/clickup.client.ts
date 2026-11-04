@@ -1,5 +1,7 @@
 import { env } from "../../../config/env.js";
-import type { Task } from "../../../types/domain.js";
+import { AppError } from "../../../lib/AppError.js";
+import type { Task, TaskComment } from "../../../types/domain.js";
+import { isAllowedFileHop, mapClickUpComments, mapClickUpTask } from "./clickup.map.js";
 import { readJson, ReadOnlyClient } from "./readOnlyClient.js";
 
 const TASK_CAP = 100;
@@ -26,32 +28,7 @@ function records(value: unknown, key: string): Record<string, unknown>[] {
 }
 
 function toTask(task: Record<string, unknown>, place: string, index: number): Task {
-  const statusRecord =
-    task.status && typeof task.status === "object" ? (task.status as { status?: unknown; type?: unknown }) : {};
-  const statusName = typeof task.status === "string" ? text(task.status) : text(statusRecord.status);
-  const statusType = text(statusRecord.type).toLowerCase();
-  const dueRaw = text(task.due_date);
-  const dueDate = /^\d+$/.test(dueRaw) ? new Date(Number(dueRaw)).toISOString().slice(0, 10) : null;
-  const assignees = Array.isArray(task.assignees) ? task.assignees : [];
-  const first = assignees[0] && typeof assignees[0] === "object" ? (assignees[0] as { username?: unknown }).username : "";
-  const href = text(task.url);
-  return {
-    id: `clickup-${text(task.id, String(index))}`,
-    projectId: null,
-    projectName: place || "ClickUp",
-    title: text(task.name, "Untitled ClickUp task"),
-    owner: text(first, "Unassigned"),
-    responsibility: "Read from ClickUp. This dashboard did not change the task.",
-    status: statusName || statusType || "—",
-    closed: statusType === "closed" || statusType === "done",
-    dueDate,
-    source: {
-      origin: "live",
-      system: "ClickUp",
-      detail: "Read-only. Status is the name stored on the ClickUp task.",
-    },
-    href: href || null,
-  };
+  return mapClickUpTask(task, place, index);
 }
 
 async function statusNamesFor(list: Record<string, unknown>, headers: Record<string, string>): Promise<string[]> {
@@ -71,7 +48,7 @@ async function tasksFor(listId: string, headers: Record<string, string>, place: 
   let page = 0;
   for (;;) {
     const payload = await readJson(
-      `https://api.clickup.com/api/v2/list/${encodeURIComponent(listId)}/task?archived=false&include_closed=true&subtasks=true&page=${page}`,
+      `https://api.clickup.com/api/v2/list/${encodeURIComponent(listId)}/task?archived=false&include_closed=true&subtasks=true&include_markdown_description=true&page=${page}`,
       headers,
     );
     const pageTasks = records(payload, "tasks");
@@ -127,3 +104,76 @@ export const clickUpClient = new ReadOnlyClient<ClickUpRead>({
     return { tasks, statusNames };
   },
 });
+
+function clickUpHeaders(): Record<string, string> {
+  return { Authorization: env.clickupToken ?? "" };
+}
+
+function clickUpId(taskId: string): string {
+  return taskId.startsWith("clickup-") ? taskId.slice("clickup-".length) : taskId;
+}
+
+export async function readClickUpTask(taskId: string): Promise<Task | null> {
+  if (!env.clickupToken) return null;
+  const payload = await readJson(
+    `https://api.clickup.com/api/v2/task/${encodeURIComponent(clickUpId(taskId))}?include_markdown_description=true&include_subtasks=true`,
+    clickUpHeaders(),
+  );
+  if (!payload || typeof payload !== "object") return null;
+  const task = payload as Record<string, unknown>;
+  const place = [named(task.space), named(task.folder), named(task.list)].filter(Boolean).join(" · ");
+  return mapClickUpTask(task, place, 0);
+}
+
+export async function readClickUpComments(taskId: string): Promise<TaskComment[]> {
+  if (!env.clickupToken) return [];
+  const payload = await readJson(
+    `https://api.clickup.com/api/v2/task/${encodeURIComponent(clickUpId(taskId))}/comment`,
+    clickUpHeaders(),
+  );
+  return mapClickUpComments(payload);
+}
+
+const FILE_CAP = 20 * 1024 * 1024;
+
+export async function fetchClickUpFile(url: string): Promise<{ body: Buffer; contentType: string | null }> {
+  let current = url;
+  for (let hop = 0; hop < 4; hop += 1) {
+    if (!isAllowedFileHop(current, hop === 0)) throw new AppError(404, "File not found.");
+    let response = await fetch(current, {
+      method: "GET",
+      redirect: "manual",
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (hop === 0 && (response.status === 401 || response.status === 403) && env.clickupToken) {
+      await response.body?.cancel();
+      response = await fetch(current, {
+        method: "GET",
+        redirect: "manual",
+        signal: AbortSignal.timeout(12_000),
+        headers: { Authorization: env.clickupToken },
+      });
+    }
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      await response.body?.cancel();
+      if (!location) throw new AppError(502, "Attachment could not be read.");
+      current = new URL(location, current).toString();
+      continue;
+    }
+    if (!response.ok || !response.body) {
+      await response.body?.cancel();
+      throw new AppError(502, "Attachment could not be read.");
+    }
+    const chunks: Buffer[] = [];
+    let total = 0;
+    for await (const chunk of response.body) {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buf.length;
+      if (total > FILE_CAP) throw new AppError(413, "File is too large to show here.");
+      chunks.push(buf);
+    }
+    return { body: Buffer.concat(chunks), contentType: response.headers.get("content-type") };
+  }
+  throw new AppError(502, "Attachment could not be read.");
+}

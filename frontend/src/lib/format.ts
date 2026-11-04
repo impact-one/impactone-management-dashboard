@@ -52,6 +52,18 @@ export function isTaskClosed(task: { status: string; closed?: boolean }): boolea
   return task.status === "done";
 }
 
+export function isCompletedStatus(task: { status: string; closed?: boolean }): boolean {
+  if (isTaskClosed(task)) return true;
+  const key = task.status.trim().toLowerCase();
+  return key === "complete" || key === "completed" || key === "closed";
+}
+
+export function isInProgressStatus(task: { status: string; closed?: boolean }): boolean {
+  if (isCompletedStatus(task)) return false;
+  const key = task.status.trim().toLowerCase();
+  return key.includes("progress") || key === "doing" || key === "active";
+}
+
 /** Keep the source string. Do not rename, respell, or change case. */
 export function plainStatus(value: string): string {
   return value;

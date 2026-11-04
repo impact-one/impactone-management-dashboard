@@ -23,6 +23,19 @@ export class SlackController {
     const message = await slackService.post(requireUser(req), req.body);
     sendData(res, message, { note: "Update posted to Slack.", ...writes() });
   });
+
+  preview = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const fileId = Array.isArray(id) ? id[0] : id;
+    const file = await slackService.preview(requireUser(req), fileId ?? "");
+    const filename = file.filename.replace(/"/g, "");
+    res.setHeader("Content-Type", file.contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'none'; sandbox");
+    res.status(200).send(file.body);
+  });
 }
 
 export const slackController = new SlackController();

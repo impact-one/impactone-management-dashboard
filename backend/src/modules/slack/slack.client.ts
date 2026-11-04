@@ -2,6 +2,13 @@ import { env } from "../../config/env.js";
 import { AppError } from "../../lib/AppError.js";
 import type { SlackMessage } from "../../types/domain.js";
 import type { LiveResult } from "../integrations/clients/readOnlyClient.js";
+import {
+  mapChannelMessages,
+  safeFilename,
+  slackFileUrl,
+  sniffImageType,
+  type SlackFilePreview,
+} from "./slack.files.js";
 
 const API = "https://slack.com/api";
 
@@ -18,6 +25,12 @@ let inFlightList: Promise<LiveResult<SlackMessage[]>> | null = null;
 
 const LIST_CACHE_MS = 10_000;
 const CHANNEL_CACHE_MS = 5 * 60_000;
+const HISTORY_PAGE_SIZE = 100;
+const HISTORY_PAGES = 3;
+const MAX_PREVIEW_BYTES = 8 * 1024 * 1024;
+const PREVIEW_CACHE_MAX = 400;
+
+const previews = new Map<string, SlackFilePreview>();
 
 export function invalidateSlackCache() {
   listCache = null;
@@ -47,6 +60,7 @@ export const slackClient = {
   channelInfo,
   listMessages,
   postMessage,
+  readFilePreview,
 };
 
 async function loadList(): Promise<LiveResult<SlackMessage[]>> {
@@ -104,8 +118,20 @@ async function channelInfo(channelId: string): Promise<SlackChannelInfo> {
 }
 
 async function listMessages(channel: SlackChannelInfo): Promise<SlackMessage[]> {
-  const payload = await slack("conversations.history", { channel: channel.id, limit: "30" });
-  const messages = Array.isArray(payload.messages) ? payload.messages : [];
+  const messages: unknown[] = [];
+  let cursor = "";
+  for (let page = 0; page < HISTORY_PAGES; page += 1) {
+    const payload = await slack("conversations.history", {
+      channel: channel.id,
+      limit: String(HISTORY_PAGE_SIZE),
+      cursor: cursor || undefined,
+    });
+    const batch = Array.isArray(payload.messages) ? payload.messages : [];
+    messages.push(...batch);
+    cursor = text(asRecord(payload.response_metadata).next_cursor);
+    if (!cursor || batch.length === 0) break;
+  }
+
   const userIds = [
     ...new Set(
       messages
@@ -115,20 +141,93 @@ async function listMessages(channel: SlackChannelInfo): Promise<SlackMessage[]> 
   ];
   await resolveUserNames(userIds);
 
-  const mapped: SlackMessage[] = [];
-  for (const [index, item] of messages.entries()) {
-    const row = asRecord(item);
-    const subtype = text(row.subtype);
-    if (subtype === "channel_join" || subtype === "channel_leave" || subtype === "channel_purpose" || subtype === "channel_topic") {
+  const mapped = mapChannelMessages(messages, channel, userNameCache);
+  rememberPreviews(mapped.flatMap((item) => item.previews));
+  // Slack returns newest first; keep that order for the desk.
+  return mapped.map((item) => item.message);
+}
+
+async function readFilePreview(fileId: string): Promise<{ body: Buffer; contentType: string; filename: string }> {
+  if (!/^F[A-Z0-9]{6,}$/.test(fileId)) throw new AppError(400, "That file id is not valid.");
+  let cached = previews.get(fileId);
+  if (!cached) {
+    await slackClient.get();
+    cached = previews.get(fileId);
+  }
+  if (!cached) throw new AppError(404, "That file is not in the recent channel history.");
+
+  const response = await fetchSlackAsset(cached.url);
+  if (!response.ok) throw new AppError(502, "Slack could not load that file preview.");
+  const bytes = await readLimited(response, MAX_PREVIEW_BYTES);
+  const contentType = sniffImageType(bytes);
+  if (!contentType) throw new AppError(415, "That file does not have an image preview.");
+  return { body: Buffer.from(bytes), contentType, filename: safeFilename(cached.name) };
+}
+
+function rememberPreviews(items: SlackFilePreview[]) {
+  for (const item of items) {
+    if (!slackFileUrl(item.url)) continue;
+    previews.delete(item.id);
+    previews.set(item.id, item);
+  }
+  while (previews.size > PREVIEW_CACHE_MAX) {
+    const oldest = previews.keys().next().value;
+    if (!oldest) break;
+    previews.delete(oldest);
+  }
+}
+
+async function fetchSlackAsset(start: string): Promise<Response> {
+  const token = env.slackBotToken;
+  if (!token) throw new AppError(503, "Slack bot token is not set.");
+  let current = slackFileUrl(start);
+  if (!current) throw new AppError(502, "Slack file preview URL was rejected.");
+
+  for (let hop = 0; hop < 3; hop += 1) {
+    const response = await fetch(current, {
+      headers: { Authorization: `Bearer ${token}` },
+      redirect: "manual",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) throw new AppError(502, "Slack file preview could not be loaded.");
+      const next = slackFileUrl(new URL(location, current).toString());
+      if (!next) throw new AppError(502, "Slack file preview URL was rejected.");
+      current = next;
       continue;
     }
-    const body = text(row.text);
-    if (!body) continue;
-    const ts = text(row.ts, String(index));
-    mapped.push(toMessage(channel, row, body, ts));
+    const declared = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > MAX_PREVIEW_BYTES) {
+      throw new AppError(413, "That file is too large to preview.");
+    }
+    return response;
   }
-  // Slack returns newest first; keep that order for the desk.
-  return mapped;
+  throw new AppError(502, "Slack file preview could not be loaded.");
+}
+
+async function readLimited(response: Response, max: number): Promise<Uint8Array> {
+  const reader = response.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel();
+      throw new AppError(413, "That file is too large to preview.");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }
 
 async function postMessage(channelId: string, textBody: string): Promise<SlackMessage> {
@@ -176,6 +275,7 @@ function toMessage(
         : "Read from the configured channel. Visible to executive and manager roles.",
     },
     href: null,
+    files: [],
   };
 }
 

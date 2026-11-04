@@ -152,16 +152,106 @@ export const projects: Project[] = [
   },
 ];
 
-export const tasks: Task[] = [
+type TaskDraft = Omit<
+  Task,
+  | "description"
+  | "priority"
+  | "updatedAt"
+  | "createdAt"
+  | "listName"
+  | "parentId"
+  | "tags"
+  | "attachments"
+  | "checklist"
+  | "comments"
+> &
+  Partial<
+    Pick<
+      Task,
+      | "description"
+      | "priority"
+      | "updatedAt"
+      | "createdAt"
+      | "listName"
+      | "parentId"
+      | "tags"
+      | "attachments"
+      | "checklist"
+      | "comments"
+    >
+  >;
+
+function fillTask(item: TaskDraft): Task {
+  return {
+    ...item,
+    description: item.description?.trim() ? item.description : item.responsibility,
+    priority: item.priority ?? null,
+    updatedAt: item.updatedAt ?? null,
+    createdAt: item.createdAt ?? null,
+    listName: item.listName?.trim() ? item.listName : item.projectName,
+    parentId: item.parentId ?? null,
+    tags: item.tags ?? [],
+    attachments: item.attachments ?? [],
+    checklist: item.checklist ?? [],
+    comments: item.comments ?? [],
+  };
+}
+
+const samplePhoto =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="#f2f5f7"/><rect x="24" y="24" width="592" height="312" rx="16" fill="#ffffff" stroke="#d5dde3"/><text x="320" y="168" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#1d3557">Site photograph</text><text x="320" y="198" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#4b4f58">Sample image</text></svg>`,
+  );
+
+export const tasks: Task[] = (
+  [
   {
     id: "task-confirm-ioc",
     projectId: "ksp-hills",
     projectName: "King Salman Park Hills",
+    listName: "IOC delivery",
     title: "Confirm IOC dashboard sections with Sary",
+    description:
+      "Confirm the IOC sections with Sary before the dashboard is treated as the source for projects, consultants, budget, and milestones.",
     owner: "Saray",
     responsibility: "Check that projects, consultants, budget, and milestones match what IOC needs.",
     status: "open",
+    priority: "high",
     dueDate: "2026-10-30",
+    updatedAt: "2026-10-28T09:30:00.000Z",
+    createdAt: "2026-10-20T08:00:00.000Z",
+    tags: ["IOC"],
+    attachments: [
+      {
+        id: "img-site",
+        title: "Site photograph",
+        extension: "svg",
+        kind: "image",
+        url: samplePhoto,
+        thumbnailUrl: samplePhoto,
+      },
+      {
+        id: "file-notes",
+        title: "IOC section notes.pdf",
+        extension: "pdf",
+        kind: "file",
+        url: null,
+        thumbnailUrl: null,
+      },
+    ],
+    checklist: [
+      { id: "chk-projects", name: "Projects", resolved: true },
+      { id: "chk-consultants", name: "Consultants", resolved: false },
+      { id: "chk-budget", name: "Budget", resolved: false },
+    ],
+    comments: [
+      {
+        id: "cmt-1",
+        author: "Saray",
+        text: "Budget section still needs a finance decision.",
+        postedAt: "2026-10-28T09:15:00.000Z",
+      },
+    ],
     source: {
       origin: "sample",
       system: "ClickUp",
@@ -174,10 +264,13 @@ export const tasks: Task[] = [
     projectId: "ksp-hills",
     projectName: "King Salman Park Hills",
     title: "Align consultant scopes to the project plan",
+    description: "Keep each consultant scope next to the workstream it serves, and flag any scope that is still a placeholder.",
     owner: "Saray",
     responsibility: "Keep consultant scope text next to the workstream it serves.",
     status: "in-progress",
+    priority: "normal",
     dueDate: "2026-11-06",
+    updatedAt: "2026-11-02T14:00:00.000Z",
     source: {
       origin: "sample",
       system: "ClickUp",
@@ -193,6 +286,7 @@ export const tasks: Task[] = [
     owner: "IOC finance",
     responsibility: "Approve a read-only snapshot, or keep the pilot on fictional sample figures.",
     status: "blocked",
+    priority: "urgent",
     dueDate: null,
     source: {
       origin: "needs-review",
@@ -258,7 +352,9 @@ export const tasks: Task[] = [
     owner: "Pilot",
     responsibility: "Show what exists, where data comes from, and what can be reused.",
     status: "done",
+    priority: "low",
     dueDate: "2026-10-29",
+    updatedAt: "2026-10-29T16:00:00.000Z",
     source: {
       origin: "documented",
       system: "This prototype",
@@ -330,7 +426,7 @@ export const tasks: Task[] = [
     },
     href: null,
   },
-];
+] satisfies TaskDraft[]).map(fillTask);
 
 export const documents: DocumentItem[] = [
   {

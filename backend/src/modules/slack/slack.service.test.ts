@@ -36,6 +36,13 @@ describe("slack desk", () => {
     );
   });
 
+  it("refuses a consultant who tries to open a file preview", async () => {
+    await assert.rejects(
+      () => slackService.preview(user("consultant"), "F0123ABCD"),
+      (error) => statusOf(error) === 403,
+    );
+  });
+
   it("rejects an empty update", async () => {
     await assert.rejects(
       () => slackService.post(user("manager"), { text: "   " }),

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,15 +8,6 @@ import { useAuth } from "../app/AuthContext";
 import { ErrorNote } from "../components/PageHeader";
 import { Logo } from "../components/Logo";
 import { useTitle } from "../lib/useTitle";
-
-const accounts = [
-  { name: "Mikolaj", email: "mikolaj@impactone.example", role: "Executive" },
-  { name: "Kulde", email: "kulde@impactone.example", role: "Manager" },
-  { name: "Zygm", email: "zygm@impactone.example", role: "Manager" },
-  { name: "Saray", email: "saray@impactone.example", role: "Manager" },
-  { name: "Consultant", email: "consultant@impactone.example", role: "Consultant" },
-  { name: "Tetia", email: "tetia@impactone.example", role: "Viewer" },
-];
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -134,31 +124,6 @@ export function LoginPage() {
                 {pending ? "Signing in…" : "Sign in"}
               </Button>
             </form>
-            <fieldset className="mt-6 grid gap-2 border-0 p-0">
-              <legend className="text-sm font-medium">Quick select</legend>
-              <ul className="grid list-none gap-2 p-0">
-                {accounts.map((account) => {
-                  const selected = email === account.email;
-                  return (
-                    <li key={account.email}>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        aria-pressed={selected}
-                        className="h-auto w-full justify-between px-3 py-3 text-start aria-pressed:border-primary aria-pressed:bg-accent"
-                        onClick={() => setEmail(account.email)}
-                      >
-                        <span className="grid">
-                          <span className="font-medium">{account.name}</span>
-                          <span className="text-xs font-normal text-muted-foreground">{account.email}</span>
-                        </span>
-                        <Badge variant="secondary">{account.role}</Badge>
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </fieldset>
           </CardContent>
         </Card>
       </section>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, SearchXIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
 import { MarkIcon } from "../components/marks";
 import { Note, PageHeader, RetryableError } from "../components/PageHeader";
@@ -16,10 +17,11 @@ export function ProjectsPage() {
   const { data, error, loading, reload } = useApi<Envelope<Project[]>>("/projects");
   const projects = data?.data ?? [];
   const [query, setQuery] = useState("");
+  const trimmedQuery = query.trim();
 
   const visible = projects.filter((project) => {
     const haystack = `${project.name} ${project.summary} ${project.owner} ${project.organisation}`.toLowerCase();
-    return !query || haystack.includes(query.toLowerCase());
+    return !trimmedQuery || haystack.includes(trimmedQuery.toLowerCase());
   });
 
   const roleNote =
@@ -60,7 +62,31 @@ export function ProjectsPage() {
             />
           </div>
           {visible.length === 0 ? (
-            <EmptyState title="No projects match" description="Try a different search." />
+            trimmedQuery ? (
+              <div role="status" className="surface flex flex-col items-center rounded-2xl bg-card px-6 py-14 text-center ring-0">
+                <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+                  <SearchXIcon className="size-5" aria-hidden="true" />
+                </span>
+                <p className="mt-4 text-base font-semibold tracking-tight text-foreground">No projects found</p>
+                <p className="mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
+                  Nothing matches <span className="font-medium text-foreground">“{trimmedQuery}”</span>. Search by name,
+                  owner, or organisation.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-5 h-9 bg-background"
+                  onClick={() => {
+                    setQuery("");
+                    document.getElementById("project-search")?.focus();
+                  }}
+                >
+                  Clear search
+                </Button>
+              </div>
+            ) : (
+              <EmptyState title="No projects yet" description="Projects assigned to your account will appear here." />
+            )
           ) : (
             <CardGrid>
               {visible.map((project) => (

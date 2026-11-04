@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CalendarDaysIcon, PlusIcon, Share2Icon, ClockIcon } from "lucide-react";
+import { CalendarDaysIcon, ChevronDownIcon, ClockIcon, PlusIcon, Share2Icon, UserRoundIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "../components/EmptyState";
@@ -179,31 +179,42 @@ export function CalendarPage() {
           </Section>
 
           <Section title="Calendars">
-            <ul className="surface divide-y overflow-hidden rounded-2xl bg-card p-0 ring-0">
+            <ul className="grid list-none gap-4 p-0">
               {desk.calendars.map((calendar) => (
-                <li key={calendar.id} className="px-4 py-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium">{calendar.name}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                <li key={calendar.id} className="surface rounded-2xl bg-card px-4 py-4 ring-0 sm:px-5 sm:py-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{calendar.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {calendar.timeZone}
                         {calendar.primary ? " · Main calendar" : ""}
                       </p>
-                      <p className="mt-1 text-sm text-foreground">{accessSentence(calendar.accessRole)}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">{accessSentence(calendar.accessRole)}</p>
                     </div>
                     <SourceBadge origin={calendar.source.origin} />
                   </div>
                   {calendar.shares.length > 0 ? (
-                    <ul className="mt-3 list-none space-y-1.5 p-0">
-                      {calendar.shares.map((share) => (
-                        <li key={share.email} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                          <span>{share.email}</span>
-                          <span className="text-xs text-muted-foreground">{roleLabel(share.role)}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="mt-4 overflow-hidden rounded-xl border border-border/70">
+                      <div className="flex items-center justify-between bg-muted/70 px-3 py-2 text-xs font-medium text-muted-foreground">
+                        <span>People</span>
+                        <span>Access level</span>
+                      </div>
+                      <ul className="list-none divide-y divide-border/70 bg-card p-0">
+                        {calendar.shares.map((share) => (
+                          <li key={share.email} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-semibold tracking-wide text-muted-foreground">
+                                {emailInitials(share.email)}
+                              </span>
+                              <span className="truncate text-sm text-foreground">{share.email}</span>
+                            </span>
+                            <span className="shrink-0 text-sm text-muted-foreground">{roleLabel(share.role)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : (
-                    <p className="mt-3 text-xs text-muted-foreground">
+                    <p className="mt-4 text-sm text-muted-foreground">
                       {desk.canSchedule ? "Not shared with anyone else." : "The sharing list is hidden for your role."}
                     </p>
                   )}
@@ -452,14 +463,29 @@ function ShareForm({ onSubmit }: { onSubmit: (email: string, role: CalendarAcces
   }
 
   return (
-    <form className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-[1fr_10rem_auto]" onSubmit={submit}>
-      <Input name="email" type="email" required placeholder="person@impactone.example" aria-label="Person to share with" />
-      <select name="role" className={fieldClass} defaultValue="reader" aria-label="What they can do">
-        <option value="writer">Can edit</option>
-        <option value="reader">See details</option>
-        <option value="freeBusyReader">Free/busy only</option>
-      </select>
-      <Button type="submit" variant="outline">
+    <form className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center" onSubmit={submit}>
+      <Input
+        name="email"
+        type="email"
+        required
+        placeholder="Add people by email"
+        aria-label="Person to share with"
+        className="h-10 flex-1 rounded-lg bg-background"
+      />
+      <div className="relative sm:w-40">
+        <select
+          name="role"
+          defaultValue="reader"
+          aria-label="What they can do"
+          className="h-10 w-full appearance-none rounded-lg border border-primary bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+        >
+          <option value="writer">Can edit</option>
+          <option value="reader">See details</option>
+          <option value="freeBusyReader">Free/busy only</option>
+        </select>
+        <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
+      <Button type="submit" variant="outline" className="h-10 rounded-lg border-primary px-4 text-primary hover:bg-primary/5">
         Share
       </Button>
     </form>
@@ -493,92 +519,130 @@ function InvitationEditor({
   if (meetings.length === 0) return null;
 
   return (
-    <div className="surface rounded-2xl bg-card p-4 ring-0">
-      <h3 className="text-sm font-medium">Guests on a meeting</h3>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">Add someone, mark them optional, or record their reply.</p>
-      <div className="mt-3 grid gap-3">
-        <Field label="Meeting">
-          <select className={fieldClass} value={meetingId} onChange={(event) => choose(event.target.value)}>
+    <div className="surface rounded-2xl bg-card p-4 ring-0 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+          <UserRoundIcon className="size-4" />
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Guests on a meeting</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">Add someone, mark them optional, or record their reply.</p>
+        </div>
+      </div>
+      <label className="mt-4 grid gap-1.5 text-sm">
+        <span className="font-medium">Meeting</span>
+        <span className="relative block">
+          <select
+            className="h-10 w-full appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            value={meetingId}
+            onChange={(event) => choose(event.target.value)}
+          >
             {meetings.map((meeting) => (
               <option key={meeting.id} value={meeting.id}>
                 {meeting.title}
               </option>
             ))}
           </select>
-        </Field>
-        {rows.length === 0 ? <p className="text-sm text-muted-foreground">No guests yet.</p> : null}
-        <ul className="grid list-none gap-2 p-0">
-          {rows.map((person) => (
-            <li key={person.email} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_9rem_auto_auto] sm:items-center">
-              <span className="text-sm">{person.name || person.email}</span>
-              <select
-                className={fieldClass}
-                value={person.response}
-                aria-label={`Reply from ${person.email}`}
-                onChange={(event) =>
-                  setRows((current) =>
-                    current.map((row) =>
-                      row.email === person.email ? { ...row, response: event.target.value as InvitationResponse } : row,
-                    ),
-                  )
-                }
-              >
-                <option value="needsAction">No reply</option>
-                <option value="accepted">Accepted</option>
-                <option value="tentative">Maybe</option>
-                <option value="declined">Declined</option>
-              </select>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={person.optional}
-                  onChange={(event) =>
-                    setRows((current) =>
-                      current.map((row) => (row.email === person.email ? { ...row, optional: event.target.checked } : row)),
-                    )
-                  }
-                />
-                Optional
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setRows((current) => current.filter((row) => row.email !== person.email))}
-              >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <form
-          className="flex flex-wrap gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const next = email.trim().toLowerCase();
-            if (!next || rows.some((row) => row.email === next)) return;
-            setRows((current) => [...current, { email: next, name: "", response: "needsAction", optional: false }]);
-            setEmail("");
-          }}
-        >
-          <Input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Add an email"
-            aria-label="Add guest"
-            className="max-w-sm"
-          />
-          <Button type="submit" variant="outline">
-            Add guest
-          </Button>
-        </form>
-        <div>
-          <Button type="button" onClick={() => onSubmit(meetingId, rows)}>
-            Save guests
-          </Button>
-        </div>
+          <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        </span>
+      </label>
+      <div className="mt-4 overflow-x-auto rounded-xl border border-border/70">
+        <table className="w-full min-w-[36rem] border-collapse text-sm">
+          <thead>
+            <tr className="bg-muted/70 text-left text-xs font-medium text-muted-foreground">
+              <th className="px-3 py-2.5 font-medium">Guest</th>
+              <th className="px-3 py-2.5 font-medium">Response</th>
+              <th className="px-3 py-2.5 text-center font-medium">Optional</th>
+              <th className="px-3 py-2.5 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-3 text-muted-foreground">
+                  No guests yet.
+                </td>
+              </tr>
+            ) : (
+              rows.map((person) => (
+                <tr key={person.email} className="border-t border-border/70">
+                  <td className="px-3 py-2.5 text-foreground">{person.name || person.email}</td>
+                  <td className="px-3 py-2.5">
+                    <span className="relative block max-w-[11rem]">
+                      <select
+                        className="h-9 w-full appearance-none rounded-lg border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        value={person.response}
+                        aria-label={`Reply from ${person.email}`}
+                        onChange={(event) =>
+                          setRows((current) =>
+                            current.map((row) =>
+                              row.email === person.email ? { ...row, response: event.target.value as InvitationResponse } : row,
+                            ),
+                          )
+                        }
+                      >
+                        <option value="needsAction">No reply</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="tentative">Maybe</option>
+                        <option value="declined">Declined</option>
+                      </select>
+                      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primary"
+                      checked={person.optional}
+                      aria-label={`Optional guest ${person.email}`}
+                      onChange={(event) =>
+                        setRows((current) =>
+                          current.map((row) => (row.email === person.email ? { ...row, optional: event.target.checked } : row)),
+                        )
+                      }
+                    />
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 px-2 text-muted-foreground"
+                      onClick={() => setRows((current) => current.filter((row) => row.email !== person.email))}
+                    >
+                      Remove
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
+      <form
+        className="mt-3 flex flex-wrap items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const next = email.trim().toLowerCase();
+          if (!next || rows.some((row) => row.email === next)) return;
+          setRows((current) => [...current, { email: next, name: "", response: "needsAction", optional: false }]);
+          setEmail("");
+        }}
+      >
+        <Input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Add an email"
+          aria-label="Add guest"
+          className="h-10 w-full max-w-xs rounded-lg bg-background"
+        />
+        <Button type="submit" variant="outline" className="h-10 rounded-lg bg-background px-4">
+          Add guest
+        </Button>
+      </form>
+      <Button type="button" className="mt-3" onClick={() => onSubmit(meetingId, rows)}>
+        Save guests
+      </Button>
     </div>
   );
 }
@@ -657,6 +721,12 @@ function accessSentence(role: CalendarAccess) {
   if (role === "writer") return "You can add and edit meetings on it.";
   if (role === "reader") return "You can see the meeting details.";
   return "You can see when people are busy, not the meeting details.";
+}
+
+function emailInitials(email: string) {
+  const local = email.split("@")[0] ?? "";
+  const letters = local.replace(/[^a-zA-Z]/g, "");
+  return (letters.slice(0, 2) || "•").toUpperCase();
 }
 
 function roleLabel(role: CalendarAccess) {

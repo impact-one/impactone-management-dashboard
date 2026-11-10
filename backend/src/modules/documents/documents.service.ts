@@ -81,13 +81,13 @@ export class DocumentsService {
       ownerEmail: user.email,
       href: null,
       projectId: project?.id ?? null,
-      projectName: project?.name ?? "Impact library",
+      projectName: project?.name ?? "No project",
       accessRole: "owner",
       shares: [{ email: user.email.toLowerCase(), role: "owner" }],
       source: {
         origin: "sample",
         system: "Google Drive",
-        detail: "Labelled library. A Google token creates this in Drive. File contents stay in Drive.",
+        detail: "Saved in My Drive. A Google token creates this in Drive. File contents stay in Drive.",
       },
       reviewFlags: [],
     };
@@ -180,7 +180,7 @@ export class DocumentsService {
     if (!env.googleAccessToken) {
       return {
         files: local,
-        note: "Google Drive is not connected. Showing the reference document library.",
+        note: "Google Drive is not connected. Showing labelled files in My Drive and Shared with me.",
         connected: false,
       };
     }
@@ -194,7 +194,7 @@ export class DocumentsService {
     }
     return {
       files: local,
-      note: live.configured ? `${live.message} Showing the reference library instead.` : live.message,
+      note: live.configured ? `${live.message} Showing labelled files instead.` : live.message,
       connected: false,
     };
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronRightIcon,
@@ -30,7 +30,7 @@ import { SourceBadge } from "../components/SourceBadge";
 import { api } from "../lib/api";
 import { downloadApiFile } from "../lib/download";
 import { useApi } from "../lib/useApi";
-import type { DocumentItem, DriveDesk, DriveFile, DriveKind, DriveRole, Envelope, Origin } from "../types";
+import type { DriveDesk, DriveFile, DriveKind, DriveRole, Envelope, Origin } from "../types";
 
 const fieldClass =
   "h-8 w-full min-w-0 max-w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -53,7 +53,7 @@ function useNarrowScreen(maxWidth = 1023) {
   return narrow;
 }
 
-type Place = "drive" | "shared" | "library";
+type Place = "drive" | "shared";
 type ViewMode = "grid" | "list";
 type CreateKind = "folder" | "document" | "spreadsheet";
 
@@ -73,16 +73,19 @@ export function DocumentsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createKind, setCreateKind] = useState<CreateKind>("document");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [created, setCreated] = useState<DriveFile[]>([]);
   const narrow = useNarrowScreen();
 
-  const files = desk?.files ?? [];
-  const known = desk?.known ?? [];
+  const serverFiles = desk?.files ?? [];
+  const files = useMemo(() => {
+    const ids = new Set(serverFiles.map((file) => file.id));
+    return [...created.filter((file) => !ids.has(file.id)), ...serverFiles];
+  }, [created, serverFiles]);
   const projects = useMemo(() => {
     const names = new Set<string>();
-    for (const item of known) names.add(item.projectName);
     for (const item of files) names.add(item.projectName);
     return Array.from(names).filter(Boolean);
-  }, [known, files]);
+  }, [files]);
 
   const folderById = useMemo(() => {
     const map = new Map<string, DriveFile>();
@@ -96,30 +99,23 @@ export function DocumentsPage() {
   const searching = query.trim().length > 0;
 
   const visibleFiles = useMemo(() => {
+    const ownedIds = new Set(files.filter((file) => file.accessRole === "owner").map((file) => file.id));
     const sharedIds = new Set(files.filter((file) => file.accessRole !== "owner").map((file) => file.id));
     return files.filter((file) => {
       if (!matches(file, query, project, origin, needsReview)) return false;
-      if (place === "library") return false;
-      if (place === "shared") {
-        if (file.accessRole === "owner") return false;
-        if (searching) return true;
-        if (currentFolderId) return file.folderId === currentFolderId;
-        return !file.folderId || !sharedIds.has(file.folderId);
-      }
+      const mine = file.accessRole === "owner";
+      if (place === "drive" && !mine) return false;
+      if (place === "shared" && mine) return false;
       if (searching) return true;
-      return file.folderId === currentFolderId;
+      if (currentFolderId) return file.folderId === currentFolderId;
+      const parents = mine ? ownedIds : sharedIds;
+      return !file.folderId || !parents.has(file.folderId);
     });
   }, [files, query, project, origin, needsReview, place, searching, currentFolderId]);
-
-  const visibleKnown = useMemo(() => {
-    if (place !== "library") return [];
-    return known.filter((item) => matches(item, query, project, origin, needsReview));
-  }, [known, query, project, origin, needsReview, place]);
 
   const folders = visibleFiles.filter((file) => file.kind === "folder");
   const documents = visibleFiles.filter((file) => file.kind !== "folder");
   const selectedFile = files.find((file) => file.id === selectedId) ?? null;
-  const selectedKnown = known.find((item) => item.id === selectedId) ?? null;
   const crumbs = folderStack.map((id) => folderById.get(id)).filter((folder): folder is DriveFile => Boolean(folder));
 
   async function run(action: () => Promise<string>) {
@@ -190,10 +186,9 @@ export function DocumentsPage() {
                   You can browse. Creating and sharing need manager access.
                 </p>
               )}
-              <nav aria-label="Drive places" className="grid grid-cols-1 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+              <nav aria-label="Drive places" className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-1">
                 <PlaceButton active={place === "drive"} icon={<HardDriveIcon />} label="My Drive" onClick={() => goPlace("drive")} />
                 <PlaceButton active={place === "shared"} icon={<UsersIcon />} label="Shared with me" onClick={() => goPlace("shared")} />
-                <PlaceButton active={place === "library"} icon={<LibraryMark />} label="Library" onClick={() => goPlace("library")} />
               </nav>
             </aside>
 
@@ -204,7 +199,7 @@ export function DocumentsPage() {
                   <Input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder={place === "library" ? "Search the library" : "Search in Drive"}
+                    placeholder="Search in Drive"
                     aria-label="Search documents"
                     className="h-10 rounded-full bg-muted/50 pl-9"
                   />
@@ -251,13 +246,13 @@ export function DocumentsPage() {
                 </label>
               </div>
 
-              <div className={cn("grid min-w-0", !narrow && (selectedFile || selectedKnown) && "lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]")}>
+              <div className={cn("grid min-w-0", !narrow && selectedFile && "lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]")}>
                 <div className="min-w-0 px-3 py-4 sm:px-4">
                   <nav aria-label="Folder path" className="mb-4 flex min-w-0 flex-wrap items-center gap-1 text-sm">
                     <button type="button" className="max-w-full truncate text-left font-medium hover:underline" onClick={() => setFolderStack([])}>
-                      {place === "shared" ? "Shared with me" : place === "library" ? "Library" : "My Drive"}
+                      {place === "shared" ? "Shared with me" : "My Drive"}
                     </button>
-                    {place !== "library" && !searching
+                    {!searching
                       ? crumbs.map((folder, index) => (
                           <span key={folder.id} className="flex min-w-0 max-w-full items-center gap-1">
                             <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -279,33 +274,24 @@ export function DocumentsPage() {
                     ) : null}
                   </nav>
 
-                  {place === "library" ? (
-                    <LibraryView
-                      items={visibleKnown}
-                      view={view}
-                      selectedId={selectedId}
-                      downloadingId={downloadingId}
-                      onSelect={setSelectedId}
-                      onDownload={downloadItem}
-                    />
-                  ) : (
-                    <DriveView
-                      folders={folders}
-                      documents={documents}
-                      view={view}
-                      selectedId={selectedId}
-                      downloadingId={downloadingId}
-                      emptyTitle={searching ? "No files match that search" : currentFolderId ? "This folder is empty" : "Nothing here yet"}
-                      emptyDescription={
-                        desk.canManage && place === "drive"
-                          ? "Use New to add a folder, Doc, or Sheet."
+                  <DriveView
+                    folders={folders}
+                    documents={documents}
+                    view={view}
+                    selectedId={selectedId}
+                    downloadingId={downloadingId}
+                    emptyTitle={searching ? "No files match that search" : currentFolderId ? "This folder is empty" : "Nothing here yet"}
+                    emptyDescription={
+                      desk.canManage && place === "drive"
+                        ? "Use New to add a folder, Doc, or Sheet. Files you create stay in My Drive."
+                        : place === "shared"
+                          ? "Files other people share with you appear here."
                           : "Files appear here when they are on a Drive you can open."
-                      }
-                      onSelect={setSelectedId}
-                      onOpenFolder={openFolder}
-                      onDownload={downloadItem}
-                    />
-                  )}
+                    }
+                    onSelect={setSelectedId}
+                    onOpenFolder={openFolder}
+                    onDownload={downloadItem}
+                  />
                 </div>
 
                 {!narrow && selectedFile ? (
@@ -336,27 +322,19 @@ export function DocumentsPage() {
                     }
                   />
                 ) : null}
-                {!narrow && selectedKnown ? (
-                  <KnownDetails
-                    item={selectedKnown}
-                    downloading={downloadingId === selectedKnown.id}
-                    onDownload={() => downloadItem(selectedKnown.id)}
-                    onClose={() => setSelectedId(null)}
-                  />
-                ) : null}
               </div>
             </div>
           </div>
         </div>
         {narrow ? (
-          <Sheet open={Boolean(selectedFile || selectedKnown)} onOpenChange={(open) => { if (!open) setSelectedId(null); }}>
+          <Sheet open={Boolean(selectedFile)} onOpenChange={(open) => { if (!open) setSelectedId(null); }}>
             <SheetContent
               side="bottom"
               showCloseButton={false}
               className="max-h-[min(85dvh,40rem)] w-full gap-0 overflow-y-auto overscroll-contain rounded-t-2xl p-0"
             >
               <SheetHeader className="sr-only">
-                <SheetTitle>{selectedFile?.title ?? selectedKnown?.title ?? "Details"}</SheetTitle>
+                <SheetTitle>{selectedFile?.title ?? "Details"}</SheetTitle>
                 <SheetDescription>Details for the selected item.</SheetDescription>
               </SheetHeader>
               {selectedFile ? (
@@ -388,15 +366,6 @@ export function DocumentsPage() {
                   }
                 />
               ) : null}
-              {selectedKnown ? (
-                <KnownDetails
-                  framed={false}
-                  item={selectedKnown}
-                  downloading={downloadingId === selectedKnown.id}
-                  onDownload={() => downloadItem(selectedKnown.id)}
-                  onClose={() => setSelectedId(null)}
-                />
-              ) : null}
             </SheetContent>
           </Sheet>
         ) : null}
@@ -415,8 +384,15 @@ export function DocumentsPage() {
           onKind={setCreateKind}
           onSubmit={(body) =>
             run(async () => {
-              await api("/documents/files", { method: "POST", body: JSON.stringify(body) });
+              const result = await api<Envelope<DriveFile>>("/documents/files", { method: "POST", body: JSON.stringify(body) });
+              setCreated((current) => [result.data, ...current.filter((file) => file.id !== result.data.id)]);
               setCreateOpen(false);
+              const parent = files.find((file) => file.id === result.data.folderId && file.kind === "folder");
+              if (result.data.accessRole === "owner") {
+                setPlace("drive");
+                setFolderStack(parent?.accessRole === "owner" && result.data.folderId ? [result.data.folderId] : []);
+              }
+              setSelectedId(result.data.id);
               return `Added “${body.title}”.`;
             })
           }
@@ -561,121 +537,91 @@ function DriveView({
   );
 }
 
-function LibraryView({
-  items,
-  view,
-  selectedId,
-  downloadingId,
+function useFolderGestures(onSelect: () => void, onOpen: () => void) {
+  const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) window.clearTimeout(timer.current);
+    };
+  }, []);
+
+  return {
+    onClick() {
+      if (timer.current) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => {
+        timer.current = null;
+        onSelect();
+      }, 250);
+    },
+    onDoubleClick(event: { preventDefault: () => void }) {
+      event.preventDefault();
+      if (timer.current) window.clearTimeout(timer.current);
+      timer.current = null;
+      onOpen();
+    },
+  };
+}
+
+function FolderOrFileButton({
+  file,
+  selected,
+  disabled,
   onSelect,
+  onOpen,
   onDownload,
+  children,
 }: {
-  items: DocumentItem[];
-  view: ViewMode;
-  selectedId: string | null;
-  downloadingId: string | null;
-  onSelect: (id: string) => void;
-  onDownload: (id: string) => void;
+  file: DriveFile;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
+  onDownload: () => void;
+  children: ReactNode;
 }) {
-  if (items.length === 0) {
-    return <EmptyState title="No library item matches" description="Clear the search or filters to see the full list." />;
-  }
-
-  if (view === "list") {
-    return (
-      <div className="@container min-w-0">
-        <ul className="grid list-none gap-2 p-0 @min-[40rem]:hidden">
-          {items.map((item) => (
-            <li key={item.id} className="min-w-0">
-              <div
-                className={cn(
-                  "flex min-w-0 items-center rounded-xl border",
-                  item.id === selectedId ? "border-primary bg-accent" : "border-border hover:bg-muted/40",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => onDownload(item.id)}
-                  disabled={item.id === downloadingId}
-                  aria-label={`Download ${item.title}`}
-                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left disabled:opacity-60"
-                >
-                  <DriveGlyph kind="file" className="h-5 w-4 shrink-0" />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{item.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {item.owner}
-                      {item.projectName ? ` · ${item.projectName}` : ""}
-                    </span>
-                  </span>
-                </button>
-                <DetailsButton label={item.title} pressed={item.id === selectedId} onClick={() => onSelect(item.id)} />
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="hidden min-w-0 overflow-hidden rounded-xl border border-border @min-[40rem]:block">
-          <table className="w-full table-fixed text-left text-sm">
-            <thead className="bg-muted/40 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="w-36 px-3 py-2 font-medium">Owner</th>
-                <th className="w-40 px-3 py-2 font-medium">Project</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className={cn("cursor-pointer border-t border-border", item.id === selectedId ? "bg-accent" : "hover:bg-muted/40")}
-                  onClick={() => onDownload(item.id)}
-                >
-                  <td className="px-3 py-2.5">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <DriveGlyph kind="file" className="h-5 w-4 shrink-0" />
-                      <span className="truncate font-medium">{item.title}</span>
-                      <DetailsButton label={item.title} pressed={item.id === selectedId} onClick={() => onSelect(item.id)} />
-                    </span>
-                  </td>
-                  <td className="truncate px-3 py-2.5 text-muted-foreground">{item.owner}</td>
-                  <td className="truncate px-3 py-2.5 text-muted-foreground">{item.projectName}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
+  const gestures = useFolderGestures(onSelect, onOpen);
+  const folder = file.kind === "folder";
   return (
-    <div className="@container min-w-0">
-    <ul className="grid list-none grid-cols-1 gap-3 p-0 @min-[24rem]:grid-cols-2 @min-[46rem]:grid-cols-3 @min-[64rem]:grid-cols-4">
-      {items.map((item) => (
-        <li key={item.id} className="min-w-0">
-          <div
-            className={cn(
-              "relative w-full min-w-0 overflow-hidden rounded-xl border bg-card",
-              item.id === selectedId ? "border-primary bg-accent" : "border-border",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => onDownload(item.id)}
-              disabled={item.id === downloadingId}
-              aria-label={`Download ${item.title}`}
-              className="w-full min-w-0 text-left hover:bg-muted/30 disabled:opacity-60"
-            >
-              <span className="grid h-24 place-items-center bg-muted/40">
-                <DriveGlyph kind="file" className="h-12 w-10" />
-              </span>
-              <span className="block truncate px-3 py-2 pr-10 text-sm font-medium">{item.title}</span>
-            </button>
-            <DetailsButton label={item.title} pressed={item.id === selectedId} onClick={() => onSelect(item.id)} floating />
-          </div>
-        </li>
-      ))}
-    </ul>
-    </div>
+    <button
+      type="button"
+      onClick={folder ? gestures.onClick : onDownload}
+      onDoubleClick={folder ? gestures.onDoubleClick : undefined}
+      disabled={disabled}
+      aria-label={folder ? file.title : `Download ${file.title}`}
+      aria-pressed={folder ? selected : undefined}
+      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left disabled:opacity-60"
+    >
+      {children}
+    </button>
+  );
+}
+
+function FolderOrFileRow({
+  file,
+  selected,
+  onSelect,
+  onOpen,
+  onDownload,
+  children,
+}: {
+  file: DriveFile;
+  selected: boolean;
+  onSelect: () => void;
+  onOpen: () => void;
+  onDownload: () => void;
+  children: ReactNode;
+}) {
+  const gestures = useFolderGestures(onSelect, onOpen);
+  const folder = file.kind === "folder";
+  return (
+    <tr
+      className={cn("cursor-pointer border-t border-border", selected ? "bg-accent" : "hover:bg-muted/40")}
+      onClick={folder ? gestures.onClick : onDownload}
+      onDoubleClick={folder ? gestures.onDoubleClick : undefined}
+    >
+      {children}
+    </tr>
   );
 }
 
@@ -690,9 +636,16 @@ function FolderTile({
   onSelect: () => void;
   onOpen: () => void;
 }) {
+  const gestures = useFolderGestures(onSelect, onOpen);
   return (
     <div className={cn("flex min-w-0 items-center rounded-xl border", selected ? "border-primary bg-accent" : "border-transparent bg-muted/50 hover:bg-muted")}>
-      <button type="button" onClick={onSelect} aria-pressed={selected} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left">
+      <button
+        type="button"
+        onClick={gestures.onClick}
+        onDoubleClick={gestures.onDoubleClick}
+        aria-pressed={selected}
+        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+      >
         <DriveGlyph kind="folder" className="h-6 w-8 shrink-0" />
         <span className="truncate text-sm font-medium">{file.title}</span>
       </button>
@@ -794,13 +747,13 @@ function FileTable({
                 file.id === selectedId ? "border-primary bg-accent" : "border-border hover:bg-muted/40",
               )}
             >
-              <button
-                type="button"
-                onClick={() => (file.kind === "folder" ? onSelect(file.id) : onDownload(file.id))}
+              <FolderOrFileButton
+                file={file}
+                selected={file.id === selectedId}
                 disabled={file.id === downloadingId}
-                aria-label={file.kind === "folder" ? file.title : `Download ${file.title}`}
-                aria-pressed={file.kind === "folder" ? file.id === selectedId : undefined}
-                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left disabled:opacity-60"
+                onSelect={() => onSelect(file.id)}
+                onOpen={() => onOpenFolder(file.id)}
+                onDownload={() => onDownload(file.id)}
               >
                 <DriveGlyph kind={file.kind} className="h-5 w-5 shrink-0" />
                 <span className="min-w-0 flex-1">
@@ -809,7 +762,7 @@ function FileTable({
                     {file.owner} · {roleLabel(file.accessRole)}
                   </span>
                 </span>
-              </button>
+              </FolderOrFileButton>
               {file.kind === "folder" ? (
                 <button
                   type="button"
@@ -837,13 +790,13 @@ function FileTable({
           </thead>
           <tbody>
             {rows.map((file) => (
-              <tr
+              <FolderOrFileRow
                 key={file.id}
-                className={cn("cursor-pointer border-t border-border", file.id === selectedId ? "bg-accent" : "hover:bg-muted/40")}
-                onClick={() => (file.kind === "folder" ? onSelect(file.id) : onDownload(file.id))}
-                onDoubleClick={() => {
-                  if (file.kind === "folder") onOpenFolder(file.id);
-                }}
+                file={file}
+                selected={file.id === selectedId}
+                onSelect={() => onSelect(file.id)}
+                onOpen={() => onOpenFolder(file.id)}
+                onDownload={() => onDownload(file.id)}
               >
                 <td className="px-3 py-2.5">
                   <span className="flex min-w-0 items-center gap-2">
@@ -856,7 +809,7 @@ function FileTable({
                 </td>
                 <td className="truncate px-3 py-2.5 text-muted-foreground">{file.owner}</td>
                 <td className="truncate px-3 py-2.5 text-muted-foreground">{roleLabel(file.accessRole)}</td>
-              </tr>
+              </FolderOrFileRow>
             ))}
           </tbody>
         </table>
@@ -982,80 +935,6 @@ function FileDetails({
         </ul>
       )}
       {canShare ? <ShareForm onSubmit={onShare} /> : null}
-    </aside>
-  );
-}
-
-function KnownDetails({
-  item,
-  framed = true,
-  downloading = false,
-  onDownload,
-  onClose,
-}: {
-  item: DocumentItem;
-  framed?: boolean;
-  downloading?: boolean;
-  onDownload: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <aside
-      className={cn(
-        "min-w-0 bg-muted/20 px-4 py-4",
-        framed ? "border-t border-border lg:border-t-0 lg:border-l" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
-      )}
-    >
-      <div className="mb-4 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold break-words">{item.title}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Library item</p>
-        </div>
-        <button type="button" aria-label="Close details" onClick={onClose} className="grid size-8 place-items-center rounded-full hover:bg-muted">
-          <XIcon className="size-4" />
-        </button>
-      </div>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button type="button" size="sm" onClick={onDownload} disabled={downloading}>
-          {downloading ? "Downloading…" : "Download"}
-        </Button>
-        {item.href ? (
-          <Button type="button" size="sm" variant="outline" asChild>
-            <a href={item.href} target="_blank" rel="noreferrer">
-              Open
-            </a>
-          </Button>
-        ) : null}
-      </div>
-      <dl className="grid gap-3 text-sm">
-        <Detail label="Owner" value={item.owner} />
-        <div>
-          <dt className="text-xs text-muted-foreground">Project</dt>
-          <dd className="mt-0.5">
-            {item.projectId ? (
-              <Link to={`/projects/${item.projectId}`} className="underline-offset-4 hover:underline">
-                {item.projectName}
-              </Link>
-            ) : (
-              item.projectName || "—"
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">Source</dt>
-          <dd className="mt-1">
-            <SourceBadge origin={item.source.origin} />
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.source.detail}</p>
-          </dd>
-        </div>
-      </dl>
-      {item.reviewFlags.length > 0 ? (
-        <ul className="mt-4 grid gap-1 text-xs leading-5 text-[var(--origin-review-fg)]">
-          {item.reviewFlags.map((flag) => (
-            <li key={flag}>{flag}</li>
-          ))}
-        </ul>
-      ) : null}
     </aside>
   );
 }
@@ -1210,14 +1089,6 @@ function DriveGlyph({ kind, className }: { kind: DriveKind; className?: string }
           <path d="M8 18h16M8 23h16M8 28h10" stroke={accent} strokeWidth="1.4" strokeLinecap="round" />
         </>
       )}
-    </svg>
-  );
-}
-
-function LibraryMark() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M3 2.5h4.2L8.5 4H13a1 1 0 0 1 1 1v7.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z" fill="currentColor" />
     </svg>
   );
 }

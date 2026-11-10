@@ -5,7 +5,7 @@ import { AppError } from "../../lib/AppError.js";
 import { permissionsFor } from "../../lib/permissions.js";
 import type { PublicUser, Role } from "../../types/domain.js";
 import { documentsService } from "./documents.service.js";
-import { downloadFilename, exportForMime } from "./drive.client.js";
+import { downloadFilename, driveLocation, exportForMime } from "./drive.client.js";
 
 function user(role: Role): PublicUser {
   return {
@@ -119,6 +119,13 @@ describe("drive library", () => {
     );
     const visible = await documentsService.download(user("consultant"), "file-scope");
     assert.equal(visible.filename, "Consultant scope.txt");
+  });
+
+  it("treats Google Drive's root folder as My Drive", () => {
+    assert.deepEqual(driveLocation("", "root-id"), { parentId: null, inRoot: true });
+    assert.deepEqual(driveLocation("root-id", "root-id"), { parentId: null, inRoot: true });
+    assert.deepEqual(driveLocation("root", "root-id"), { parentId: null, inRoot: true });
+    assert.deepEqual(driveLocation("folder-1", "root-id"), { parentId: "folder-1", inRoot: false });
   });
 
   it("names a Drive export for local viewing", () => {

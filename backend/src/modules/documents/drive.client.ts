@@ -18,9 +18,18 @@ export interface DriveCreateInput {
 }
 
 let cache: { at: number; result: LiveResult<DriveFile[]> } | null = null;
+let rootCache: { token: string; id: string } | null = null;
+const recentFiles: { at: number; file: DriveFile }[] = [];
 
 export function invalidateDriveCache() {
   cache = null;
+}
+
+export function driveLocation(parentId: string, rootId: string): { parentId: string | null; inRoot: boolean } {
+  if (!parentId || parentId === "root" || (rootId !== "" && parentId === rootId)) {
+    return { parentId: null, inRoot: true };
+  }
+  return { parentId, inRoot: false };
 }
 
 export function liveFileId(fileId: string) {
@@ -42,7 +51,7 @@ export const driveClient = {
         ok: false,
         configured: false,
         checkedAt,
-        message: "Google access token is not set. The library stays on labelled sample files.",
+        message: "Google access token is not set. My Drive stays on labelled sample files.",
         data: null,
       };
       cache = { at: Date.now(), result };
@@ -190,23 +199,17 @@ async function downloadFile(fileId: string) {
 }
 
 async function listFiles(): Promise<DriveFile[]> {
-  const params = new URLSearchParams({
-    pageSize: "25",
-    orderBy: "folder,modifiedTime desc",
-    q: "trashed = false",
-    fields: `files(${FILE_FIELDS})`,
-    supportsAllDrives: "true",
-    includeItemsFromAllDrives: "true",
-  });
-  const payload = await google(`/files?${params.toString()}`);
-  const rows = arrayOf(record(payload).files);
+  const rootId = await myDriveRootId();
+  const rows = await listFileRows();
   const names = new Map<string, string>();
   for (const row of rows) {
     const item = record(row);
     const id = textOf(item.id);
     if (id) names.set(id, textOf(item.name) || "Untitled");
   }
-  const files = rows.map((row) => mapFile(row, names));
+  if (rootId) names.set(rootId, "My Drive");
+  const listed = rows.map((row) => mapFile(row, names, rootId));
+  const files = mergeRecent(listed);
   const owned = files.filter((file) => file.accessRole === "owner").slice(0, 12);
   await Promise.all(
     owned.map(async (file) => {
@@ -217,13 +220,45 @@ async function listFiles(): Promise<DriveFile[]> {
   return files;
 }
 
+async function listFileRows(): Promise<unknown[]> {
+  const rows: unknown[] = [];
+  let pageToken = "";
+  for (let page = 0; page < 5; page += 1) {
+    const params = new URLSearchParams({
+      pageSize: "200",
+      orderBy: "modifiedTime desc",
+      q: "trashed = false",
+      fields: `nextPageToken,files(${FILE_FIELDS})`,
+      spaces: "drive",
+      supportsAllDrives: "true",
+      includeItemsFromAllDrives: "true",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const payload = record(await google(`/files?${params.toString()}`));
+    rows.push(...arrayOf(payload.files));
+    pageToken = textOf(payload.nextPageToken);
+    if (!pageToken) break;
+  }
+  return rows;
+}
+
+async function myDriveRootId(): Promise<string> {
+  const token = env.googleAccessToken;
+  if (!token) return "";
+  if (rootCache?.token === token && rootCache.id) return rootCache.id;
+  const payload = record(await google(`/files/root?${new URLSearchParams({ fields: "id" }).toString()}`));
+  const id = textOf(payload.id);
+  if (id) rootCache = { token, id };
+  return id;
+}
+
 async function getFile(fileId: string): Promise<DriveFile> {
   const params = new URLSearchParams({
     supportsAllDrives: "true",
     fields: FILE_FIELDS,
   });
   const payload = await google(`/files/${encodeURIComponent(fileId)}?${params.toString()}`);
-  const file = mapFile(payload, new Map());
+  const file = mapFile(payload, new Map(), await myDriveRootId().catch(() => ""));
   if (file.accessRole === "owner" || file.accessRole === "writer") {
     file.shares = await safeShares(fileId);
   }
@@ -245,9 +280,25 @@ async function createFile(input: DriveCreateInput): Promise<DriveFile> {
     body: JSON.stringify(body),
   });
   invalidateDriveCache();
-  const file = mapFile(payload, new Map());
+  const file = mapFile(payload, new Map(), await myDriveRootId().catch(() => ""));
   file.shares = await safeShares(parseLiveId(file.id) ?? "");
+  rememberFile(file);
   return file;
+}
+
+function rememberFile(file: DriveFile) {
+  const now = Date.now();
+  const kept = recentFiles.filter((entry) => now - entry.at < 120_000 && entry.file.id !== file.id);
+  kept.unshift({ at: now, file });
+  recentFiles.length = 0;
+  recentFiles.push(...kept.slice(0, 40));
+}
+
+function mergeRecent(files: DriveFile[]) {
+  const now = Date.now();
+  const ids = new Set(files.map((file) => file.id));
+  const extra = recentFiles.flatMap((entry) => (now - entry.at < 120_000 && !ids.has(entry.file.id) ? [entry.file] : []));
+  return extra.length > 0 ? [...extra, ...files] : files;
 }
 
 async function upsertShare(fileId: string, email: string, role: Exclude<DriveRole, "owner">) {
@@ -314,7 +365,7 @@ async function listPermissionRecords(fileId: string) {
   });
 }
 
-function mapFile(raw: unknown, names: Map<string, string>): DriveFile {
+function mapFile(raw: unknown, names: Map<string, string>, rootId = ""): DriveFile {
   const row = record(raw);
   const id = textOf(row.id);
   const mime = textOf(row.mimeType);
@@ -324,12 +375,17 @@ function mapFile(raw: unknown, names: Map<string, string>): DriveFile {
   const caps = record(row.capabilities);
   const accessRole: DriveRole =
     row.ownedByMe === true ? "owner" : caps.canEdit === true ? "writer" : caps.canComment === true ? "commenter" : "reader";
+  const location = driveLocation(parentId, rootId);
   return {
     id: liveFileId(id),
     title: textOf(row.name) || "Untitled",
     kind: kindOf(mime),
-    folderId: parentId ? liveFileId(parentId) : null,
-    folderName: parentId ? names.get(parentId) || "Drive" : "My Drive",
+    folderId: location.parentId ? liveFileId(location.parentId) : null,
+    folderName: location.inRoot
+      ? accessRole === "owner" || parentId
+        ? "My Drive"
+        : "Shared with me"
+      : names.get(parentId) || "Drive",
     owner: textOf(owner.displayName) || "Google Drive",
     ownerEmail: textOf(owner.emailAddress).toLowerCase(),
     href: linkFor(id, mime, textOf(row.webViewLink)),

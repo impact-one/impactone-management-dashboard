@@ -16,6 +16,7 @@ export const assistantClient = {
   status,
   complete,
   classify,
+  askWebhook,
 };
 
 async function status(): Promise<LiveResult<{ model: string }>> {
@@ -76,6 +77,32 @@ async function loadStatus(): Promise<LiveResult<{ model: string }>> {
       data: null,
     };
   }
+}
+
+async function askWebhook(question: string): Promise<string> {
+  if (!env.makeWebhookUrl || !env.makeWebhookApiKey) {
+    throw new AppError(503, "Make webhook is not set. Add MAKE_WEBHOOK_URL and MAKE_WEBHOOK_API_KEY.");
+  }
+  let response: Response;
+  try {
+    response = await fetch(env.makeWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-make-apikey": env.makeWebhookApiKey,
+      },
+      body: JSON.stringify({ question }),
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch {
+    throw new AppError(502, "The Make webhook could not be reached.");
+  }
+  const output = (await response.text()).trim();
+  if (!response.ok) {
+    throw new AppError(502, output || "The Make webhook could not answer that question.");
+  }
+  if (!output) throw new AppError(502, "The Make webhook returned an empty reply.");
+  return output;
 }
 
 async function classify(brief: string): Promise<string> {

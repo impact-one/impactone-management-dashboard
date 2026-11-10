@@ -29,6 +29,8 @@ export const env = {
   slackChannelId: optional("SLACK_CHANNEL_ID"),
   openaiApiKey: optional("OPENAI_API_KEY"),
   openaiModel: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
+  makeWebhookUrl: optional("MAKE_WEBHOOK_URL"),
+  makeWebhookApiKey: optional("MAKE_WEBHOOK_API_KEY"),
   anthropicApiKey: optional("ANTHROPIC_API_KEY"),
   anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5-5",
   otterApiKey: optional("OTTER_API_KEY"),

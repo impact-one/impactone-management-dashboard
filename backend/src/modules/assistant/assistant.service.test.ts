@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { env } from "../../config/env.js";
 import { AppError } from "../../lib/AppError.js";
 import { permissionsFor } from "../../lib/permissions.js";
 import type { PublicUser, Role } from "../../types/domain.js";
@@ -71,9 +72,13 @@ describe("chatgpt assistant", () => {
     );
   });
 
-  it("stays off until an OpenAI API key is set", async () => {
+  it("stays off until the Make webhook is set", async () => {
     const desk = await assistantService.desk(user("manager"));
-    if (desk.desk.connected) return;
+    if (env.makeWebhookUrl && env.makeWebhookApiKey) {
+      assert.equal(desk.desk.connected, true);
+      return;
+    }
+    assert.equal(desk.desk.connected, false);
     await assert.rejects(
       () =>
         assistantService.run(user("manager"), {
@@ -84,15 +89,33 @@ describe("chatgpt assistant", () => {
     );
   });
 
-  it("answers the next meeting from the desk", async () => {
-    const result = await assistantService.run(user("manager"), {
-      workflow: "summarize",
-      brief: "When is my next meeting?",
-      acknowledged: true,
-    });
-    assert.equal(result.intent, "overview");
-    assert.equal(result.intentLabel, "Desk");
-    assert.equal(result.model, null);
-    assert.match(result.output, /meeting/i);
+  it("sends the question to the Make webhook and returns its reply", async () => {
+    if (!env.makeWebhookUrl || !env.makeWebhookApiKey) return;
+    const original = globalThis.fetch;
+    let seenUrl = "";
+    let seenHeader = "";
+    let seenBody = "";
+    globalThis.fetch = async (input, init) => {
+      const headers = new Headers(init?.headers);
+      seenUrl = String(input);
+      seenHeader = headers.get("x-make-apikey") ?? "";
+      seenBody = String(init?.body ?? "");
+      return new Response("Your next meeting is Test on Monday.", { status: 200 });
+    };
+    try {
+      const result = await assistantService.run(user("manager"), {
+        brief: "When is my next meeting?",
+        acknowledged: true,
+      });
+      assert.equal(seenUrl, env.makeWebhookUrl);
+      assert.equal(seenHeader, env.makeWebhookApiKey);
+      assert.equal(seenBody, JSON.stringify({ question: "When is my next meeting?" }));
+      assert.equal(result.intent, "chat");
+      assert.equal(result.intentLabel, "Chat");
+      assert.equal(result.model, null);
+      assert.equal(result.output, "Your next meeting is Test on Monday.");
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 });
